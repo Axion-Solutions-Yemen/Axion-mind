@@ -25,6 +25,8 @@ test('minimalist UI: Hermes Control moved to sidebar footer', () => {
 test('minimalist UI: sidebar tab switcher markup exists', () => {
   assert.ok(indexHtml.includes('id="tabPersonas"'), 'tabPersonas exists');
   assert.ok(indexHtml.includes('id="tabHermes"'), 'tabHermes exists');
+  assert.ok(indexHtml.includes('Personal Agent'), 'Personal Agent label present in sidebar tab');
+  assert.ok(chatAppJs.includes('Hermes (Personal Agent)'), 'Hermes (Personal Agent) name configured');
 });
 
 test('minimalist UI: JS defines 3 clean intelligence tiers', () => {

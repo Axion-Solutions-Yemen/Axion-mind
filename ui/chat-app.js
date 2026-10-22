@@ -221,11 +221,11 @@
       // Define default Hermes agent representing native CLI/Telegram/Mind sessions
       const hermesAgent = {
         id: 'hermes',
-        name: 'Hermes (System Mind)',
+        name: 'Hermes (Personal Agent)',
         title: 'Autonomous System Agent & CLI/Telegram Engine',
         avatar: '⚡',
         emoji: '⚡',
-        description: 'Native Hermes mind executing system commands, terminal, and live sessions.',
+        description: 'Personal Hermes agent executing system commands, terminal, and live sessions.',
         model: 'antigravity-gemini-3.8-flash',
         isDefaultHermes: true,
       };
@@ -243,7 +243,7 @@
       // Section title
       const header = document.createElement('div');
       header.className = 'sidebar-section-title';
-      header.innerHTML = `<span>${activeSidebarTab === 'hermes' ? 'System Engine' : 'Personas'}</span><span class="count-badge">${allAgents.length}</span>`;
+      header.innerHTML = `<span>${activeSidebarTab === 'hermes' ? 'Personal Agent' : 'Personas'}</span><span class="count-badge">${allAgents.length}</span>`;
       personasListEl.appendChild(header);
 
       allAgents.forEach(agent => {
