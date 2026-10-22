@@ -1,0 +1,123 @@
+warning: function `sandbox` is never used
+ --> tests\..\src\app_paths.rs:9:8
+  |
+9 | pub fn sandbox() -> Result<Option<PathBuf>, String> {
+  |        ^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `hub` is never used
+  --> tests\..\src\app_paths.rs:12:8
+   |
+12 | pub fn hub() -> Result<PathBuf, String> {
+   |        ^^^
+
+   Compiling axion-mind v0.2.0 (D:\Side-Projects\StartUp\personas_hub_tauri)
+warning: `axion-mind` (test "app_paths") generated 2 warnings
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:193:21
+    |
+193 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:563:21
+    |
+563 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: struct `ChatRequestPayload` is never constructed
+  --> src\llm.rs:10:12
+   |
+10 | pub struct ChatRequestPayload {
+   |            ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `axion-mind` (bin "axion-mind" test) generated 3 warnings (1 duplicate)
+warning: `axion-mind` (bin "axion-mind") generated 3 warnings (2 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.22s
+     Running unittests src\main.rs (target\debug\deps\axion_mind-3b47dccfe93d329f.exe)
+
+running 1 test
+test llm::thinking_tests::provider_reasoning_is_separate_from_answer ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\app_paths.rs (target\debug\deps\app_paths-d2c54c2768267d9d.exe)
+
+running 1 test
+test sandbox_is_explicit_marked_absolute_and_never_falls_back ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\backup.rs (target\debug\deps\backup-094ccebef155f0d5.exe)
+
+running 5 tests
+test backup_scope_tracks_the_real_storage_directory ... ok
+test recovery_rejects_unsafe_paths_corrupt_json_and_case_aliases_without_creating_files ... ok
+test snapshot_keeps_exact_customer_files_including_session_metadata ... ok
+test recovery_is_exact_and_never_overwrites_an_existing_directory ... ok
+test dangling_category_link_cannot_silently_disappear_from_a_backup ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\backup_policy.rs (target\debug\deps\backup_policy-f74fa89d459a1e34.exe)
+
+running 2 tests
+test native_policy_rejects_non_identity_paths_and_non_file_markers ... ok
+test native_off_switch_is_durable_and_owner_storage_scoped ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\chat_cancel.rs (target\debug\deps\chat_cancel-e1ee575dec84d2be.exe)
+
+running 1 test
+test cancellation_interrupts_silent_work_without_cancelling_another_request ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\chat_cancel_early.rs (target\debug\deps\chat_cancel_early-9ae07c84a8285f57.exe)
+
+running 1 test
+test stop_before_native_registration_is_not_lost ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\chat_store.rs (target\debug\deps\chat_store-c926b54f1bad3c69.exe)
+
+running 3 tests
+test corrupt_chat_and_path_traversal_fail_without_rewriting_data ... ok
+test retry_is_exactly_once_and_preserves_unrecognized_customer_fields ... ok
+test metadata_failure_can_be_retried_without_duplicate_messages ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\native_auth.rs (target\debug\deps\native_auth-14d6c62c90c03848.exe)
+
+running 10 tests
+test live_supabase_google_readiness ... ignored, Explicit live provider-readiness check; no browser login and no cloud writes
+test native_flow_registry_rejects_overlap_and_cancels_the_current_attempt ... ok
+test callback_only_accepts_code_for_the_exact_random_path ... ok
+test pkce_matches_rfc7636_sha256_vector ... ok
+test windows_session_encryption_roundtrips_and_rejects_tampering ... ok
+test session_store_uses_encrypted_bytes_and_can_be_cleared_without_touching_other_data ... ok
+test disabled_google_provider_never_opens_a_browser ... ok
+test expired_session_refreshes_then_checks_user_identity_with_fixture_server ... ok
+test native_cancellation_releases_the_callback_port ... ok
+test oauth_pkce_callback_exchanges_code_and_validates_identity_with_fixture_server ... ok
+
+test result: ok. 9 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests\notification_safety.rs (target\debug\deps\notification_safety-57a6fa4e1a81e26b.exe)
+
+running 1 test
+test notification_via_stdin_does_not_evaluate_syntax ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.60s
+

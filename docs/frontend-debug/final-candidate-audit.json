@@ -1,0 +1,70 @@
+{
+  "utc": "2026-10-22T18:31:14.843211+00:00",
+  "candidate": "D:\\Side-Projects\\StartUp\\personas_hub_tauri\\target\\stabilization\\release\\axion-mind.exe",
+  "sha256": "4c3ffd0e91b64f2ca088f87f391e5a381676651c2ba5975e36636eab25733162",
+  "bytes": 16566272,
+  "source_manifest": {
+    "build.rs": "487059eaf8a947b80f20a9aacac038a5047b2ad69d2401b827376c67d6fe847f",
+    "capabilities/default.json": "281a0e2265a7b8949acfe506099c5cb249cee1a4c020b56879efc507ac62f87c",
+    "Cargo.lock": "dd9be8e891b2699d86d37cc6ed9b2112e580684e9b9f1cd9bf62f2b7852abb2d",
+    "Cargo.toml": "ad05e363a18d5324ff159ce568aa9162497049d07be5c53ce23c0c97d2e65744",
+    "src/app_paths.rs": "6006788edf152f90eb92baa33de5dc504922bc47d4e4a502351375f9e7e17ccd",
+    "src/auth.rs": "cd6d377babece649f4f05e11d5ca540aed09a8e8a89cbdcba0692c101bb63083",
+    "src/backup.rs": "28bd3a5723c04a7d1558a113c76efd4a17991527281e18a59fee17c0a197dc18",
+    "src/backup_policy.rs": "2cc0c6e1836809ef77515713871d4814c7938c53af0fa52dde7817dfdcc83f89",
+    "src/bin_test.rs": "50da13a3b1e326e2afc340a98647cee4e2645e03f8d8234763c4ec166efc1751",
+    "src/capabilities/default.json": "685d452932fbc5bf3461c1819a759621205fad033b44a9e1aa9f2ad32dd6b017",
+    "src/chat_cancel.rs": "c1a14c3d6440c53d6a65f872761631c35c1fe1ded6e60d2db02e3a5f8b414533",
+    "src/chat_store.rs": "5d0548e5567734996c11d3be11dc428d980507d40a4fa3dfe9d980a526106485",
+    "src/config.rs": "2d1eb02d80b0e604241665fd5a36517ab50d40f48a73599db5a407e6d84a173d",
+    "src/db.rs": "2c63e0169375bb3a1db7d568759c3b46c2617eb815b735d497b53a0fe79fa4d3",
+    "src/llm.rs": "0157bcd30137c1c9c68041b54d70a1fac7754770b80ce69c105e29b0554571c7",
+    "src/logger.rs": "93b490c572f4f5392ca3dce41416fc8111612ffd8e1da23c1509c6e7d0f6f086",
+    "src/main.rs": "cd635fec929b87b24c614c10673d939dd8ae5db67554b3cdce02a3e30f8052fa",
+    "src/notification.rs": "8d058ce60669f840001e97b104d5028511399fe19f3a449f995dad79b159fc4c",
+    "src/personas.rs": "ecae71c22e9a1d4fbf951f073e49bf4d16594ef225a8ef26b4a078592cb3df08",
+    "tauri.conf.json": "68339d64085e6e4748a3b08c5fc4ed5b8b6e22b9a9b9ab689f828558e8f1cf51",
+    "ui/assets/app_logo.png": "bf05c50bff8bb6b17eb0064dfbe114cf7a3856975148205126da2a1e41956d91",
+    "ui/assets/axion_mind_emblem.png": "53ff4cf59e278dea2fdad3834abeefc7cf0c19897e7e3a34d850c1566dae64a6",
+    "ui/assets/axion_mind_full.png": "781aacaea763ba7a82dd035d624279bfb603bc93cd885cc0ff68ff06c62f2476",
+    "ui/auto-backup.js": "6abd9dc85fc2276339325c052b6a4b6cd9b19111ed3055fd35e10db21f726cf3",
+    "ui/chat-app.js": "040ce6c3320f26797307ff8f711615a5a9ad884a4573133f039c9a66ef644900",
+    "ui/cloud-sync.js": "1aef07a3594186825854f61c7c1d35be8213633d798d928d4cc2d00c45e53168",
+    "ui/dialog-accessibility.js": "a06cdb3690ba416fcdf1464e519288bfff9945e7631b03c5b801aa1e60073456",
+    "ui/google-auth.js": "486cda8834fcf1f6641aa35ccc7a817612050f6272cb021704507290ed60139f",
+    "ui/index.html": "d407b7dbd6ec3f4eec128ead4113e9dcb25c61b6eb77d7479739fbc39574d916",
+    "ui/premium-motion.css": "abc01e4574075d42817efa1b0e6b6b10704ca9905978b3b76da577ac2ef7dc6d",
+    "ui/safe-markdown.js": "eb438cabcd4347d008937dc302d3d1424156d83dc2403b5d780090ab64d8789b",
+    "ui/streaming-ux.js": "fdb8591061c7fd3017e3a4385a6484e40d76ee51621397f84cad1d6314be5c03",
+    "ui/supabase.js": "ee3be8de192b97cb1d73d1e95d6b82bb1f6b658c0f97c4ef757fc331996ed3d3",
+    "ui/test_script.js": "20c61cb52c11e61252bb16d79bf1aeb27e1d6af961983b1503d5ff39f471b00a",
+    "ui/vendor/dompurify-LICENSE": "1b02e03c3fb4f87d476c128f0eb9def1f5a1709d28b180465228bd41574623b7",
+    "ui/vendor/github-dark.min.css": "9f208d022102b1d0c7aebfecd8e42ca7997d5de636649d2b31ea63093d809019",
+    "ui/vendor/highlight-LICENSE": "6c081431591d9df696c82dc598fe1423765b8a299b200ed00b281afd0f64c490",
+    "ui/vendor/highlight.min.js": "837a6fa5b0c736b52bbde2b2b6190f305da3fc9ed41681db5321507057b5c846",
+    "ui/vendor/manifest.json": "1b5f2d928125f01c9ee87b7b0c7a63140cfaef4aaf37d50c4559b6f3e4b439bb",
+    "ui/vendor/marked-LICENSE.md": "8e3a3f82f59a60958f56ca08f445647c32a4733dc7ca6c2c46f6eb898471ab9c",
+    "ui/vendor/marked.min.js": "3e7e7d7feb3e5d58cb6c804f68ab5c24cc7e5eb6270fd6e5cbb9124739217d0c",
+    "ui/vendor/purify.min.js": "89e1fa7647cb495370d3a997ace4387f5d15d9f4c5af12352c53daa400956287",
+    "ui/workspace-motion.js": "9c3a9a89681ed5445b58805aa5b5c85228f5212595ddbb55d7584cecb3730f74"
+  },
+  "source_newer_than_candidate": [],
+  "packaging": {
+    "scope": "Tauri frontendDist ui recursive source inventory; candidate exe not installer/signing certification",
+    "asset_count": 23,
+    "findings": []
+  },
+  "customer_readback": {
+    "config.json": {
+      "exists": true,
+      "baseline_recorded": false,
+      "matches_baseline": null
+    },
+    "personas.json": {
+      "exists": true,
+      "baseline_recorded": true,
+      "matches_baseline": true
+    }
+  },
+  "production_processes": "\nImage Name                     PID Session Name        Session#    Mem Usage\n========================= ======== ================ =========== ============\naxion-mind.exe               67104 Console                    1     35,300 K\n"
+}

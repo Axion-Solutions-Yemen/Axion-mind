@@ -1,0 +1,39 @@
+{
+  "rollback": {
+    "matched": 23,
+    "total": 23,
+    "differences": []
+  },
+  "customer": {
+    "matched": 88,
+    "total": 90,
+    "differences": [
+      {
+        "path": "chats\\alex-hormozi_original.json",
+        "status": "changed",
+        "mtime_utc": "2026-10-22T02:02:43.317235+00:00"
+      },
+      {
+        "path": "sessions\\alex-hormozi.json",
+        "status": "changed",
+        "mtime_utc": "2026-10-22T02:02:43.317235+00:00"
+      }
+    ]
+  },
+  "config": {
+    "valid_json": true,
+    "sha256": "ed32e530fce0c1ee84c6c11bcf9db7805f91500eedaeaf2c9700a71819b5f7d8",
+    "keys": [
+      "cloud_api_key",
+      "cloud_model",
+      "cloud_provider",
+      "custom_auth_token",
+      "custom_model",
+      "custom_url",
+      "hermes_auth_token",
+      "hermes_gateway_url",
+      "mode"
+    ],
+    "baseline_available": false
+  }
+}

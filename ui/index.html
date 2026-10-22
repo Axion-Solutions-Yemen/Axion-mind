@@ -1695,11 +1695,61 @@
       </div>
 
       <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--ax-border); display: flex; justify-content: space-between; align-items: center;">
-        <button type="button" class="btn-action" id="btnTestConn" style="border: 1px solid var(--ax-border); padding: 8px 14px; font-size: 12px; cursor: pointer;">⚡ Test Connection</button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-action" id="btnTestConn" style="border: 1px solid var(--ax-border); padding: 8px 14px; font-size: 12px; cursor: pointer;">⚡ Test Connection</button>
+          <button type="button" class="btn-action" id="btnCheckAppUpdate" style="border: 1px solid var(--ax-border); padding: 8px 14px; font-size: 12px; cursor: pointer;">🔄 Check Updates</button>
+        </div>
         <div style="display: flex; gap: 8px;">
           <button type="button" class="btn-cancel" id="btnCancelSettings" style="background: none; border: 1px solid var(--ax-border); color: var(--ax-text-muted); padding: 8px 14px; border-radius: 8px; cursor: pointer;">Cancel</button>
           <button type="button" class="btn-save" id="btnSaveSettings" style="background: var(--ax-primary); color: white; padding: 8px 18px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;">Save Settings</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Auto-Update Modal -->
+  <div class="modal-backdrop" id="updateModal">
+    <div class="modal-card" style="width: 500px;">
+      <div class="modal-header">
+        <h3 id="updateModalTitle" style="display: flex; align-items: center; gap: 8px;">
+          <span>🚀</span> Update Available
+        </h3>
+        <button class="btn-close-modal" id="btnCloseUpdateModal">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; background: rgba(255,255,255,0.03); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--ax-border);">
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ax-text-muted);">New Version</div>
+            <div id="updateTargetVersion" style="font-size: 16px; font-weight: 700; color: #34d399; margin-top: 2px;">v0.2.1</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ax-text-muted);">Current Version</div>
+            <div id="updateCurrentVersion" style="font-size: 13px; font-weight: 500; color: var(--ax-text-muted); margin-top: 2px;">v0.2.0</div>
+          </div>
+        </div>
+
+        <div id="updateNotesSection" style="display: none;">
+          <label style="font-size: 11.5px; font-weight: 600; color: var(--ax-text-secondary); margin-bottom: 6px; display: block;">Release Notes</label>
+          <div id="updateReleaseNotes" style="max-height: 130px; overflow-y: auto; padding: 10px 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--ax-border); border-radius: 6px; font-size: 12px; line-height: 1.5; color: var(--ax-text-main); white-space: pre-wrap;"></div>
+        </div>
+
+        <div id="updateProgressSection" style="display: none; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 11.5px;">
+            <span id="updateProgressLabel" style="color: var(--ax-text-secondary);">Downloading update...</span>
+            <span id="updateProgressPercent" style="font-weight: 600; color: #34d399;">0%</span>
+          </div>
+          <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden;">
+            <div id="updateProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); transition: width 0.2s ease;"></div>
+          </div>
+        </div>
+
+        <div id="updateStatusMsg" style="display: none; padding: 8px 12px; border-radius: 6px; font-size: 11.5px;"></div>
+      </div>
+
+      <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--ax-border); display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn-cancel" id="btnLaterUpdate" style="background: none; border: 1px solid var(--ax-border); color: var(--ax-text-muted); padding: 8px 14px; border-radius: 8px; cursor: pointer;">Remind Me Later</button>
+        <button type="button" class="btn-primary" id="btnPerformUpdate" style="background: var(--ax-primary, #6366f1); color: white; padding: 8px 18px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;">Update &amp; Restart</button>
       </div>
     </div>
   </div>
@@ -1787,6 +1837,7 @@
   <script src="streaming-ux.js"></script>
   <script src="workspace-motion.js"></script>
   <script src="dialog-accessibility.js"></script>
+  <script src="updater.js"></script>
 
   <script src="chat-app.js"></script>
 </body>

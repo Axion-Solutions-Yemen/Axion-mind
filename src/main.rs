@@ -8,6 +8,7 @@ mod db;
 mod llm;
 mod chat_cancel;
 mod chat_store;
+mod updater;
 
 #[tauri::command]
 fn get_chat_storage_scope() -> Result<String, String> { backup::scope_id(&personas::get_app_data_dir()?) }
@@ -728,6 +729,7 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             get_personas,
             open_chat_link,
@@ -772,6 +774,9 @@ fn main() {
             sign_in_with_google,
             cancel_google_sign_in,
             cancel_chat_stream,
+            updater::check_for_updates,
+            updater::download_and_install_update,
+            updater::restart_app,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
