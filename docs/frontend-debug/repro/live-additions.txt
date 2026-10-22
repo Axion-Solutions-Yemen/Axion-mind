@@ -1,0 +1,33 @@
+ await scenario('provider errors preserve partial output and remain visibly errors',async()=>{
+  await choose('alpha_one');await send('ERROR');await waitFor(()=>requests.some(r=>r.text==='ERROR'));await idle();await delay(100);
+  const html=await c.evaluate("[...document.querySelectorAll('.live-answer')].at(-1).textContent");assert.match(html,/Deterministic fixture error/);
+  const all=chat('alpha_one'),index=all.findIndex(m=>m.content==='ERROR');assert.ok(index>=0);assert.match(all[index+1].content,/Error: Deterministic fixture error/);return {partialPreserved:true,errorVisible:true};
+ });
+ await scenario('active turn survives navigating away and back without duplicate rows',async()=>{
+  await choose('alpha_one');await send('RETURN LONG');await waitFor(()=>requests.some(r=>r.text==='RETURN LONG'));await delay(100);await choose('beta_one');await choose('alpha_one');
+  assert.equal(await c.evaluate("[...document.querySelectorAll('.message-row.user')].filter(n=>n.textContent.includes('RETURN LONG')).length"),1);await idle();return {reattachedExactlyOnce:true};
+ });
+ await scenario('all streamed output follows latest at multiple viewport sizes',async()=>{
+  const samples=[];
+  for(const size of [{width:900,height:600},{width:1280,height:820}]){
+   await c.send('Emulation.setDeviceMetricsOverride',{...size,deviceScaleFactor:1,mobile:false});await choose('alpha_one');await send('SCROLL LONG '+size.width);await waitFor(()=>requests.some(r=>r.text==='SCROLL LONG '+size.width));
+   while(await c.evaluate("document.getElementById('btnStop').style.display!=='none'")){
+    const value=await c.evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const e=document.getElementById('messagesContainer'),t=document.querySelector('.live-reasoning-text');resolve({gap:e.scrollHeight-e.scrollTop-e.clientHeight,thinkingGap:t?t.scrollHeight-t.scrollTop-t.clientHeight:0,width:innerWidth,overflow:document.documentElement.scrollWidth-innerWidth});})))");samples.push(value);await delay(70);
+   }
+  }
+  await c.send('Emulation.clearDeviceMetricsOverride');
+  const worst=Math.max(...samples.map(s=>s.gap)),overflow=Math.max(...samples.map(s=>s.overflow));assert.ok(worst<=3,'latest text bottom gap='+worst);assert.ok(overflow<=1,'horizontal page overflow='+overflow);return {samples:samples.length,maxGap:worst,horizontalOverflow:overflow};
+ });
+ async function pointerClick(selector){const pos=await c.evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw Error('missing pointer target');e.scrollIntoView({block:'nearest'});const r=e.getBoundingClientRect();const x=r.x+r.width/2,y=r.y+r.height/2;return {x,y,hit:e===document.elementFromPoint(x,y)||e.contains(document.elementFromPoint(x,y))};})()`);assert.ok(pos.hit,'pointer target obstructed '+selector);await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:pos.x,y:pos.y});await c.send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,x:pos.x,y:pos.y});await c.send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,x:pos.x,y:pos.y});}
+ await scenario('real pointer, keyboard, RTL input and dialog focus restoration',async()=>{
+  await pointerClick('#btnOpenNewPersonaModal');await delay(280);await pointerClick('#modalPersonaName');await c.send('Input.insertText',{text:'اختبار عربي QA'});
+  assert.equal(await c.evaluate("document.getElementById('modalPersonaName').value"),'اختبار عربي QA');
+  await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await delay(200);
+  assert.equal(await c.evaluate("document.getElementById('personaModal').classList.contains('open')"),false);
+  assert.equal(await c.evaluate('document.activeElement.id'),'btnOpenNewPersonaModal','focus was not restored to dialog trigger');
+  await c.evaluate("document.getElementById('chatInput').focus()");await c.send('Input.insertText',{text:'مرحبا بالعالم'});assert.equal(await c.evaluate("document.getElementById('chatInput').dir"),'auto');await c.evaluate("document.getElementById('chatInput').value=''");return {nativePointer:true,arabicInputPreserved:true,focusRestored:true};
+ });
+ await scenario('CSP, hostile markdown and link protocols enforce a local privilege boundary',async()=>{
+  const result=await c.evaluate(`(()=>{let evalBlocked=false;try{new Function('return 1')();}catch(e){evalBlocked=e.name==='EvalError';}const malicious='<svg onload="window.__x=1"></svg><form><button data-action="runHermesQuickCommand" data-value="doctor">bad</button></form><a href="javascript:alert(1)">bad</a><iframe srcdoc="x"></iframe><img src="x" onerror="window.__x=1"><a href="https://example.com">ok</a>';const template=document.createElement('template');template.innerHTML=marked.parse(malicious);return {evalBlocked,unsafe:!!template.content.querySelector('svg,form,button,iframe,[onload],[onerror],[data-action],a[href^="javascript:"]'),safeLink:!!template.content.querySelector('a[href="https://example.com"]'),csp:document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.content||null};})()`);
+  assert.equal(result.unsafe,false);assert.equal(result.evalBlocked,true,'unsafe-eval still permitted');assert.equal(result.safeLink,true);assert.ok(result.csp);return {evalBlocked:true,unsafeHtmlRemoved:true,cspPresent:true};
+ });

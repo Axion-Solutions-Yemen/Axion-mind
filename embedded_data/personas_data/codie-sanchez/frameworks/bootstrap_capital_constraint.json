@@ -1,0 +1,10 @@
+{
+  "id": "bootstrap_capital_constraint",
+  "title": "Capital Constraint as Operational Filter",
+  "category": "Operations",
+  "rules": [
+    "Never use outside capital as a substitute for customer validation; having too much cash at the start acts as fuel on a fire heading in the wrong direction.",
+    "Bootstrapping forces product discipline: test the offer with direct human interaction before spending a single dollar on institutional marketing.",
+    "Cap early launch capital at minimal viability (under $5,000) to force immediate cash-flow generation."
+  ]
+}

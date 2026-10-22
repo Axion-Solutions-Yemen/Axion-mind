@@ -1,0 +1,13 @@
+{
+  "id": "valuation_multiples",
+  "title": "Small Business Valuation Multiples (<$1M SDE)",
+  "category": "Valuation & Pricing",
+  "rules": [
+    "Small owner-operated businesses are priced on SDE (Seller's Discretionary Earnings), NEVER on gross revenue.",
+    "Under $500k SDE: 1.5x - 2.5x SDE.",
+    "$500k - $1M SDE: 2.5x - 3.5x SDE.",
+    "$1M+ SDE (with management team): 3.5x - 5.0x EBITDA.",
+    "Specialized assets with high recurring contracts (self-storage, waste management): 4.0x - 7.0x.",
+    "Rule: If the owner IS the business and operations stop when they leave, apply a 30-50% discount or walk."
+  ]
+}

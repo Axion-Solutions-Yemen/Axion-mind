@@ -1,0 +1,15 @@
+{
+  "id": "car_wash_value_add",
+  "anchor": {
+    "industry": "Car Wash",
+    "year": 2020,
+    "deal_size": "$450,000",
+    "outcome": "42% cash-on-cash return, modernized bays"
+  },
+  "purchase_price": "$450,000",
+  "cash_down": "$90,000 (20%)",
+  "debt_structure": "40% SBA loan + 40% Seller note at 5.5% interest",
+  "equipment": "4 self-serve wand bays + 1 automatic touchless tunnel",
+  "value_add": "Introduced $29.99/mo unlimited subscription memberships. Recurring revenue jumped from 0% to 58% of total volume within 9 months.",
+  "key_lesson": "Transforming one-off transactional coin-op customers into recurring monthly subscribers instantly doubles the valuation multiple."
+}

@@ -1,0 +1,10 @@
+{
+  "id": "sba_debt_architecture",
+  "title": "SBA 7(a) & Debt Architecture",
+  "category": "Financing & Leverage",
+  "rules": [
+    "SBA 7(a) Loan parameters: Up to $5,000,000, 10-year amortization, Prime + 2.75% typical rate.",
+    "Equity Injection Optimization: Combine 10% cash down with a 10-15% seller note on full standby to minimize personal equity risk.",
+    "DSCR Requirement: Lenders require a minimum Debt Service Coverage Ratio of 1.25x. Ensure free cash flow covers debt payments with a 25% safety buffer."
+  ]
+}

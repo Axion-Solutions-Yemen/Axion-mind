@@ -1,0 +1,36 @@
+✔ automatic backup is opt-in, verifies once and skips unchanged data (6.7225ms)
+✔ switching accounts revokes prior consent even when returning to a previously enabled account (0.8143ms)
+✔ disabling during an upload cancels it and ignores late success (0.5811ms)
+✔ network failures use increasing retries and retain unsaved status until verified (0.8222ms)
+✔ permission denial pauses automatic attempts until explicit re-enable (0.5817ms)
+✔ verified manual backup metadata survives restart without a second upload (0.708ms)
+✔ logout invalidates a late native inspection and revokes consent before reauthentication (0.5314ms)
+✔ real scheduler lifecycle checks every 30 seconds and stops without a late reschedule (0.4846ms)
+✖ failed consent persistence cannot enable uploads in memory (1.1165ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 67.9041
+
+✖ failing tests:
+
+test at tests\auto-backup.test.cjs:62:1
+✖ failed consent persistence cannot enable uploads in memory (1.1165ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\auto-backup.test.cjs:64:123)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

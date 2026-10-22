@@ -1,0 +1,30 @@
+{
+  "checked_at": "2026-10-22T00:12:39.044630+03:00",
+  "verified_email": "arafat.trans@gmail.com",
+  "project": "kefxeysyvtdxxdupkapa",
+  "database_counts": {
+    "customer_personas": 1,
+    "knowledge_parent_carriers": 2,
+    "frameworks": 47,
+    "anecdotes": 33,
+    "knowledge_cards": 80,
+    "chat_conversations": 19,
+    "complete_backup_snapshots": 5
+  },
+  "latest_database_update_local": "2026-10-22T00:06:40.727000+03:00",
+  "latest_snapshot_files": 89,
+  "snapshot_integrity_valid": true,
+  "current_local_files": 89,
+  "local_changes_since_latest_backup": {
+    "new_files": 0,
+    "changed_files": 0,
+    "removed_files": 0
+  },
+  "all_current_files_match_latest_backup": true,
+  "persona_contents_match": true,
+  "chat_contents_match": true,
+  "knowledge_payloads_match": false,
+  "all_current_knowledge_payloads_present": true,
+  "retained_extra_legacy_knowledge_rows": 22,
+  "readonly": true
+}

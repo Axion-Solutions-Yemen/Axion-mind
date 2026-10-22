@@ -1,0 +1,23 @@
+✔ automatic backup is opt-in, verifies once and skips unchanged data (6.3702ms)
+✔ switching accounts revokes prior consent even when returning to a previously enabled account (0.8466ms)
+✔ disabling during an upload cancels it and ignores late success (0.7166ms)
+✔ network failures use increasing retries and retain unsaved status until verified (0.9156ms)
+✔ permission denial pauses automatic attempts until explicit re-enable (0.5644ms)
+✖ verified manual backup metadata survives restart without a second upload (0.5098ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 63.7138
+
+✖ failing tests:
+
+test at tests\auto-backup.test.cjs:43:1
+✖ verified manual backup metadata survives restart without a second upload (0.5098ms)
+  TypeError: f.scheduler.recordVerified is not a function
+      at TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\auto-backup.test.cjs:45:14)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7)

@@ -1,0 +1,144 @@
+    async function sendMessage() {
+      const text = chatInputEl.value.trim();
+      if (!text || isStreaming || !activeId) return;
+      const origin = { mode: activeMode, id: activeId, model: currentChatModel,
+        name: activePersonaNameEl.textContent || 'Agent' };
+      ++historyLoadEpoch; // A pending history load must never erase this new turn.
+      chatInputEl.value = '';
+      chatInputEl.style.height = 'auto';
+      messagesContainerEl.querySelector('.empty-state')?.remove();
+      const userBox = appendMessageRow('user', text, origin.mode, null, null, true);
+      const assistantContentBox = appendMessageRow('assistant', '', origin.mode, null, origin.model, true);
+      const request = { id: crypto.randomUUID(), origin, stopped: false, error: '', saved: false,
+        userRow: userBox.parentElement, assistantRow: assistantContentBox.parentElement,
+        abort: new AbortController(), savePromise: Promise.resolve(), started: performance.now() };
+      activeChatRequest = request;
+      isStreaming = true;
+      btnSendEl.style.display = 'none'; btnSendEl.disabled = false;
+      btnStopEl.style.display = 'flex'; btnStopEl.disabled = false;
+      const isOriginVisible = () => activeMode === origin.mode && activeId === origin.id && assistantContentBox.isConnected;
+      const shouldRestoreFocus = () => isOriginVisible() && !document.querySelector('.modal-backdrop.open') &&
+        (document.activeElement === chatInputEl || document.activeElement === btnStopEl || document.activeElement === btnSendEl || document.activeElement === document.body);
+      const statusEl = document.createElement('span');
+      statusEl.className = 'thinking-live-indicator'; statusEl.textContent = 'Waiting for model…';
+      assistantContentBox.appendChild(statusEl);
+      const thinkingPanel = document.createElement('details'); thinkingPanel.className = 'thinking-accordion live-reasoning';
+      thinkingPanel.open = true; thinkingPanel.hidden = true;
+      const thinkingSummary = document.createElement('summary'); thinkingSummary.className = 'thinking-header';
+      const thinkingBody = document.createElement('div'); thinkingBody.className = 'thinking-content live-reasoning-text';
+      thinkingBody.style.cssText = 'white-space:pre-wrap;padding:12px;overflow-wrap:anywhere;max-height:260px;overflow-y:auto';
+      thinkingPanel.append(thinkingSummary, thinkingBody); assistantContentBox.appendChild(thinkingPanel);
+      const thinkingCtrl = window.AxionStreamUX.createThinkingController({
+        onRender: (raw, active) => {
+          thinkingPanel.hidden = !raw; thinkingBody.textContent = raw;
+          thinkingSummary.textContent = active ? 'Thinking…' : (request.stopped ? 'Thinking (interrupted)' : 'Thinking (complete)');
+          thinkingBody.scrollTop = thinkingBody.scrollHeight;
+          if (isOriginVisible()) scrollToBottom();
+        }
+      });
+      const responseTextEl = document.createElement('div'); responseTextEl.className = 'live-answer';
+      assistantContentBox.appendChild(responseTextEl);
+      let isFirstToken = true;
+      const timerInterval = setInterval(() => {
+        if (!isFirstToken || !statusEl.isConnected) return;
+        statusEl.textContent = `Waiting for model… ${Math.round((performance.now() - request.started) / 1000)}s`;
+      }, 1000);
+      const persist = async raw => {
+        if (request.saved || origin.mode !== 'persona') return;
+        request.saved = true;
+        const content = raw + (request.stopped ? '\n\n[Stopped by user]' : request.error ? `\n\n[Error: ${request.error}]` : '');
+        const existing = (await invoke('get_persona_chat', { sessionId: origin.id })) || [];
+        existing.push({role:'user',content:text,timestamp:Date.now()/1000,model:null},
+          {role:'assistant',content,timestamp:Date.now()/1000,model:origin.model || null});
+        await invoke('save_persona_chat', { sessionId: origin.id, messages: existing });
+      };
+      const scrollTracker = new window.AxionStreamUX.ScrollTracker({ threshold: 60 });
+      activeScrollTracker = scrollTracker;
+      const streamCtrl = window.AxionStreamUX.createStreamController({
+        onRender: (preparedMarkdown, meta) => {
+          if (isFirstToken && preparedMarkdown.length > 0) { isFirstToken = false; clearInterval(timerInterval); statusEl.remove(); }
+          let html = marked.parse(preparedMarkdown);
+          if (meta.active) html += '<span class="streaming-cursor"></span>';
+          else if (request.stopped) html += '<div class="stream-stopped-badge">⏹ Stopped by user</div>';
+          responseTextEl.innerHTML = html;
+          if (isOriginVisible()) {
+            scrollTracker.scrollToBottom(messagesContainerEl);
+            btnScrollBottomEl?.classList.remove('visible');
+          }
+        },
+        onDone: (finalRawText, interrupted) => {
+          clearInterval(timerInterval); thinkingCtrl.complete(); statusEl.remove();
+          responseTextEl.querySelectorAll('pre code').forEach(block => window.hljs?.highlightElement(block));
+          attachCodeCopyButtons();
+          if (isOriginVisible()) scrollToBottom();
+          request.savePromise = persist(finalRawText);
+          // Attach a handler immediately; finally awaits the original promise and reports errors.
+          request.savePromise.catch(() => {});
+        }
+      });
+      request.controller = streamCtrl; activeStreamController = streamCtrl; abortController = request.abort;
+      request.stop = async () => {
+        if (request.stopped || !streamCtrl.isActive()) return;
+        request.stopped = true; btnStopEl.disabled = true;
+        streamCtrl.stop(); request.abort.abort();
+        try { await invoke('cancel_chat_stream', { requestId: request.id }); }
+        catch (error) { console.warn('Cancellation failed', String(error)); }
+      };
+      const receive = event => {
+        if (!streamCtrl.isActive() || request.stopped) return;
+        if (event.type === 'thinking') { statusEl.textContent = 'Thinking…'; thinkingCtrl.append(event.delta); }
+        else if (event.type === 'token') streamCtrl.append(event.delta);
+        else if (event.type === 'error') {
+          request.error = String(event.message || 'Generation failed'); streamCtrl.complete();
+          const errorEl = document.createElement('div'); errorEl.className = 'stream-error'; errorEl.textContent = request.error;
+          responseTextEl.appendChild(errorEl);
+        } else if (event.type === 'done') {
+          if (!streamCtrl.getText()) request.error = 'The model returned no answer text.';
+          streamCtrl.complete();
+          if (origin.mode === 'session') fetchHermesSessions();
+          if (!request.error) triggerResponseNotification(origin.name, streamCtrl.getText());
+        }
+      };
+      try {
+        if (text.startsWith('/')) {
+          let command = text.slice(1);
+          if (command.split(' ')[0] === 'model') command = command.trim() === 'model' ? 'config get model' : 'config set model ' + command.split(' ').slice(1).join(' ');
+          const output = await invoke('execute_hermes_command', { command });
+          streamCtrl.append(String(output || 'Command completed.')); streamCtrl.complete();
+        } else {
+          const ChannelClass = window.__TAURI__?.core?.Channel || window.__TAURI_INTERNALS__?.Channel;
+          if (ChannelClass) {
+            const channel = new ChannelClass(); channel.onmessage = receive;
+            if (origin.mode === 'session') await invoke('stream_hermes_chat', {sessionId:origin.id,message:text,onEvent:channel,requestId:request.id});
+            else {
+              const persona = personas.find(p=>p.id===origin.id || origin.id.startsWith(p.id + '_'));
+              await invoke('stream_persona_chat', {personaId:origin.id,message:text,systemPrompt:persona?.system_prompt || '',model:origin.model || persona?.model || null,onEvent:channel,requestId:request.id});
+            }
+          } else {
+            const endpoint = origin.mode === 'persona' ? `/api/personas/${origin.id}/chat` : `/api/sessions/${origin.id}/chat`;
+            const response = await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text}),signal:request.abort.signal});
+            if (!response.ok) throw new Error(`Chat HTTP ${response.status}`);
+            const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';
+            const line=raw=>{if(!raw.startsWith('data:'))return;const data=raw.slice(5).trim();if(data==='[DONE]'){receive({type:'done'});return;}if(!data)return;const e=JSON.parse(data);const d=e.choices?.[0]?.delta;
+              if(e.error)receive({type:'error',message:typeof e.error==='string'?e.error:e.error.message});
+              else {if(d?.reasoning_content)receive({type:'thinking',delta:d.reasoning_content});if(d?.content||typeof e.delta==='string')receive({type:'token',delta:d?.content||e.delta});}};
+            while(!request.stopped){const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});let end;while((end=buffer.indexOf('\n'))>=0){line(buffer.slice(0,end).trim());buffer=buffer.slice(end+1);}}
+            buffer+=decoder.decode();if(buffer.trim())line(buffer.trim());
+          }
+        }
+        if (streamCtrl.isActive()) receive({type:'done'});
+      } catch (error) {
+        if (!request.stopped) receive({type:'error',message:String(error?.message || error)});
+      } finally {
+        clearInterval(timerInterval); thinkingCtrl.complete(); statusEl.remove();
+        if (streamCtrl.isActive()) streamCtrl.complete();
+        try { await request.savePromise; }
+        catch (error) { const el=document.createElement('div');el.className='stream-error';el.textContent='Response could not be saved. Keep this chat open and retry saving.';assistantContentBox.appendChild(el);console.error('Chat persistence failed',String(error)); }
+        if (activeChatRequest === request) {
+          const restoreFocus = shouldRestoreFocus();
+          activeChatRequest = null; isStreaming = false; activeStreamController = null; abortController = null;
+          btnSendEl.style.display='flex'; btnSendEl.disabled=false;btnStopEl.style.display='none';btnStopEl.disabled=false;
+          if (restoreFocus) chatInputEl.focus({preventScroll:true});
+        }
+      }
+    }

@@ -1,0 +1,28 @@
+   Compiling axion-mind v0.2.0 (D:\Side-Projects\StartUp\personas_hub_tauri)
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:193:21
+    |
+193 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:563:21
+    |
+563 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: struct `ChatRequestPayload` is never constructed
+  --> src\llm.rs:10:12
+   |
+10 | pub struct ChatRequestPayload {
+   |            ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `axion-mind` (bin "axion-mind") generated 3 warnings
+    Finished `release` profile [optimized] target(s) in 53.83s

@@ -1,0 +1,53 @@
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:168:21
+    |
+168 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:530:21
+    |
+530 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: struct `ChatRequestPayload` is never constructed
+ --> src\llm.rs:9:12
+  |
+9 | pub struct ChatRequestPayload {
+  |            ^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling axion-mind v0.2.0 (D:\Side-Projects\StartUp\personas_hub_tauri)
+warning: `axion-mind` (bin "axion-mind") generated 3 warnings
+error[E0425]: cannot find function `scope_id` in module `backup`
+  --> tests\backup.rs:12:19
+   |
+12 |     let a=backup::scope_id(&first).unwrap();assert_eq!(a.len(),64);assert_eq!(a,backup::scope_id(&first.join(".")).unwrap());
+   |                   ^^^^^^^^ not found in `backup`
+
+error[E0425]: cannot find function `scope_id` in module `backup`
+  --> tests\backup.rs:12:89
+   |
+12 |     let a=backup::scope_id(&first).unwrap();assert_eq!(a.len(),64);assert_eq!(a,backup::scope_id(&first.join(".")).unwrap());
+   |                                                                                         ^^^^^^^^ not found in `backup`
+
+error[E0425]: cannot find function `scope_id` in module `backup`
+  --> tests\backup.rs:13:26
+   |
+13 |     assert_ne!(a,backup::scope_id(&second).unwrap());
+   |                          ^^^^^^^^ not found in `backup`
+
+error[E0425]: cannot find function `scope_id` in module `backup`
+  --> tests\backup.rs:14:21
+   |
+14 |     assert!(backup::scope_id(&first.join("missing")).is_err());
+   |                     ^^^^^^^^ not found in `backup`
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `axion-mind` (test "backup") due to 4 previous errors

@@ -1,0 +1,11 @@
+{
+  "id": "due_diligence_red_flags",
+  "title": "Due Diligence Red Flags",
+  "category": "Risk Mitigation",
+  "rules": [
+    "Customer Concentration: Any single client accounting for >15-20% of gross revenue is a deal-breaker or requires earnout protection.",
+    "Tax Return vs P&L discrepancy: If P&L shows $200k profit but tax return shows $20k, trust the tax return.",
+    "Deferred CapEx: Aging machinery requiring imminent replacement.",
+    "Lease cliff: Less than 5 years remaining on commercial lease with no fixed renewal option."
+  ]
+}

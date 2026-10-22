@@ -1,0 +1,274 @@
+TAP version 13
+# Subtest: automatic backup is opt-in, verifies once and skips unchanged data
+ok 1 - automatic backup is opt-in, verifies once and skips unchanged data
+  ---
+  duration_ms: 7.4187
+  type: 'test'
+  ...
+# Subtest: switching accounts revokes prior consent even when returning to a previously enabled account
+ok 2 - switching accounts revokes prior consent even when returning to a previously enabled account
+  ---
+  duration_ms: 1.0338
+  type: 'test'
+  ...
+# Subtest: disabling during an upload cancels it and ignores late success
+ok 3 - disabling during an upload cancels it and ignores late success
+  ---
+  duration_ms: 0.8969
+  type: 'test'
+  ...
+# Subtest: network failures use increasing retries and retain unsaved status until verified
+ok 4 - network failures use increasing retries and retain unsaved status until verified
+  ---
+  duration_ms: 0.9153
+  type: 'test'
+  ...
+# Subtest: permission denial pauses automatic attempts until explicit re-enable
+ok 5 - permission denial pauses automatic attempts until explicit re-enable
+  ---
+  duration_ms: 0.5513
+  type: 'test'
+  ...
+# Subtest: verified manual backup metadata survives restart without a second upload
+ok 6 - verified manual backup metadata survives restart without a second upload
+  ---
+  duration_ms: 0.7363
+  type: 'test'
+  ...
+# Subtest: logout invalidates a late native inspection and revokes consent before reauthentication
+ok 7 - logout invalidates a late native inspection and revokes consent before reauthentication
+  ---
+  duration_ms: 0.563
+  type: 'test'
+  ...
+# Subtest: real scheduler lifecycle checks every 30 seconds and stops without a late reschedule
+ok 8 - real scheduler lifecycle checks every 30 seconds and stops without a late reschedule
+  ---
+  duration_ms: 0.5159
+  type: 'test'
+  ...
+# Subtest: failed consent persistence cannot enable uploads in memory
+ok 9 - failed consent persistence cannot enable uploads in memory
+  ---
+  duration_ms: 0.6509
+  type: 'test'
+  ...
+# Subtest: automatic authorization is bound to the active owner, storage and captured digest
+ok 10 - automatic authorization is bound to the active owner, storage and captured digest
+  ---
+  duration_ms: 0.6997
+  type: 'test'
+  ...
+# Subtest: controller forwards automatic settings without bypassing verified engine logic
+ok 11 - controller forwards automatic settings without bypassing verified engine logic
+  ---
+  duration_ms: 0.4426
+  type: 'test'
+  ...
+# Subtest: account UI binds automatic policy, truthful diagnostics and the native scoped inspector
+ok 12 - account UI binds automatic policy, truthful diagnostics and the native scoped inspector
+  ---
+  duration_ms: 1.1003
+  type: 'test'
+  ...
+# Subtest: all-account policy automatically enrolls each verified owner but preserves explicit per-account off
+ok 13 - all-account policy automatically enrolls each verified owner but preserves explicit per-account off
+  ---
+  duration_ms: 1.2908
+  type: 'test'
+  ...
+# Subtest: native disable fallback survives localStorage failure, logout and scheduler recreation
+ok 14 - native disable fallback survives localStorage failure, logout and scheduler recreation
+  ---
+  duration_ms: 0.3928
+  type: 'test'
+  ...
+# Subtest: disabled control remains usable offline and resumption cannot silently re-enable it
+ok 15 - disabled control remains usable offline and resumption cannot silently re-enable it
+  ---
+  duration_ms: 0.3794
+  type: 'test'
+  ...
+# Subtest: actual sync handler settles without the original delayed sb exception
+ok 16 - actual sync handler settles without the original delayed sb exception
+  ---
+  duration_ms: 2.0614
+  type: 'test'
+  ...
+# Subtest: snapshot plan covers distinct cards, supporting files, exact values, and underscored persona IDs
+ok 17 - snapshot plan covers distinct cards, supporting files, exact values, and underscored persona IDs
+  ---
+  duration_ms: 6.435
+  type: 'test'
+  ...
+# Subtest: real HTTP fixture: complete backup verifies cards and immutable snapshot and survives cloud-only download
+ok 18 - real HTTP fixture: complete backup verifies cards and immutable snapshot and survives cloud-only download
+  ---
+  duration_ms: 65.4497
+  type: 'test'
+  ...
+# Subtest: HTTP 400 cannot publish a complete backup or expose raw backend content
+ok 19 - HTTP 400 cannot publish a complete backup or expose raw backend content
+  ---
+  duration_ms: 8.1799
+  type: 'test'
+  ...
+# Subtest: HTTP 401 cannot publish a complete backup or expose raw backend content
+ok 20 - HTTP 401 cannot publish a complete backup or expose raw backend content
+  ---
+  duration_ms: 4.3682
+  type: 'test'
+  ...
+# Subtest: HTTP 403 cannot publish a complete backup or expose raw backend content
+ok 21 - HTTP 403 cannot publish a complete backup or expose raw backend content
+  ---
+  duration_ms: 4.1295
+  type: 'test'
+  ...
+# Subtest: HTTP 409 cannot publish a complete backup or expose raw backend content
+ok 22 - HTTP 409 cannot publish a complete backup or expose raw backend content
+  ---
+  duration_ms: 4.1724
+  type: 'test'
+  ...
+# Subtest: HTTP 413 cannot publish a complete backup or expose raw backend content
+ok 23 - HTTP 413 cannot publish a complete backup or expose raw backend content
+  ---
+  duration_ms: 4.3623
+  type: 'test'
+  ...
+# Subtest: HTTP 429 cannot publish a complete backup or expose raw backend content
+ok 24 - HTTP 429 cannot publish a complete backup or expose raw backend content
+  ---
+  duration_ms: 4.8168
+  type: 'test'
+  ...
+# Subtest: HTTP 500 cannot publish a complete backup or expose raw backend content
+ok 25 - HTTP 500 cannot publish a complete backup or expose raw backend content
+  ---
+  duration_ms: 3.7968
+  type: 'test'
+  ...
+# Subtest: pagination exhausts server pages even if server page cap is smaller than requested
+ok 26 - pagination exhausts server pages even if server page cap is smaller than requested
+  ---
+  duration_ms: 11.7667
+  type: 'test'
+  ...
+# Subtest: tampered cloud snapshot fails integrity validation
+ok 27 - tampered cloud snapshot fails integrity validation
+  ---
+  duration_ms: 11.1426
+  type: 'test'
+  ...
+# Subtest: mid-operation account change stops writes and cannot claim complete
+ok 28 - mid-operation account change stops writes and cannot claim complete
+  ---
+  duration_ms: 2.8338
+  type: 'test'
+  ...
+# Subtest: request timeout terminates the operation and releases the admission guard
+ok 29 - request timeout terminates the operation and releases the admission guard
+  ---
+  duration_ms: 27.2827
+  type: 'test'
+  ...
+# Subtest: cancellation during an HTTP request is terminal and leaves no complete backup
+ok 30 - cancellation during an HTTP request is terminal and leaves no complete backup
+  ---
+  duration_ms: 30.6538
+  type: 'test'
+  ...
+# Subtest: overlapping operations are rejected without queuing a second upload
+ok 31 - overlapping operations are rejected without queuing a second upload
+  ---
+  duration_ms: 12.0593
+  type: 'test'
+  ...
+# Subtest: local edits during upload prevent a latest-data success claim
+ok 32 - local edits during upload prevent a latest-data success claim
+  ---
+  duration_ms: 9.7206
+  type: 'test'
+  ...
+# Subtest: unsafe, corrupt and Windows-alias snapshot paths are rejected before any HTTP write
+ok 33 - unsafe, corrupt and Windows-alias snapshot paths are rejected before any HTTP write
+  ---
+  duration_ms: 0.4179
+  type: 'test'
+  ...
+# Subtest: controller restores controls and reports verified counts rather than a stuck timer
+ok 34 - controller restores controls and reports verified counts rather than a stuck timer
+  ---
+  duration_ms: 0.3001
+  type: 'test'
+  ...
+# Subtest: UI and native bindings expose verified backup and non-destructive cloud recovery without auto-sync promises
+ok 35 - UI and native bindings expose verified backup and non-destructive cloud recovery without auto-sync promises
+  ---
+  duration_ms: 0.9035
+  type: 'test'
+  ...
+# Subtest: snapshot history is excluded from persona readback and only one selected recovery envelope is fetched
+ok 36 - snapshot history is excluded from persona readback and only one selected recovery envelope is fetched
+  ---
+  duration_ms: 11.2303
+  type: 'test'
+  ...
+# Subtest: cancellation during final snapshot verification cannot turn into success
+ok 37 - cancellation during final snapshot verification cannot turn into success
+  ---
+  duration_ms: 9.0223
+  type: 'test'
+  ...
+# Subtest: controller cloud recovery writes only the downloaded verified snapshot to a new native folder
+ok 38 - controller cloud recovery writes only the downloaded verified snapshot to a new native folder
+  ---
+  duration_ms: 0.215
+  type: 'test'
+  ...
+# Subtest: account form offers Google instead of a hardcoded personal login
+ok 39 - account form offers Google instead of a hardcoded personal login
+  ---
+  duration_ms: 1.8862
+  type: 'test'
+  ...
+# Subtest: Google controller module exists for real browser auth
+ok 40 - Google controller module exists for real browser auth
+  ---
+  duration_ms: 0.163
+  type: 'test'
+  ...
+# Subtest: verified backend session updates account, without claiming data was synced
+ok 41 - verified backend session updates account, without claiming data was synced
+  ---
+  duration_ms: 1.3382
+  type: 'test'
+  ...
+# Subtest: provider configuration failure remains a visible error, not a fake login
+ok 42 - provider configuration failure remains a visible error, not a fake login
+  ---
+  duration_ms: 0.292
+  type: 'test'
+  ...
+# Subtest: double clicks start only one native OAuth flow
+ok 43 - double clicks start only one native OAuth flow
+  ---
+  duration_ms: 0.2421
+  type: 'test'
+  ...
+# Subtest: cancel asks native backend to close listener and suppresses late login
+ok 44 - cancel asks native backend to close listener and suppresses late login
+  ---
+  duration_ms: 0.1793
+  type: 'test'
+  ...
+1..44
+# tests 44
+# suites 0
+# pass 44
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 394.7848

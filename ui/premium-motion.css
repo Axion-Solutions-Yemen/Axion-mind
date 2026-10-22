@@ -1,0 +1,185 @@
+/* Axion motion: quiet, responsive, and local. No per-token animation. */
+:root {
+  --ax-motion-quick: 120ms;
+  --ax-motion-standard: 180ms;
+  --ax-motion-enter: 260ms;
+  --ax-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ax-ease-control: cubic-bezier(.2, .7, .2, 1);
+}
+
+/* Transform + opacity only for entrances; no persistent GPU layer hints. */
+@keyframes ax-message-in {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ax-dialog-in {
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ax-menu-in {
+  from { opacity: 0; transform: translateY(5px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ax-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.message-row.motion-new {
+  animation: ax-message-in var(--ax-motion-enter) var(--ax-ease-out);
+}
+/* Existing history stays still; only fresh sends receive motion-new. */
+.modal-backdrop.open {
+  animation: ax-fade-in var(--ax-motion-standard) ease-out;
+}
+.modal-backdrop.open > .modal-card {
+  animation: ax-dialog-in var(--ax-motion-enter) var(--ax-ease-out);
+  transform-origin: center;
+}
+#chatModelDropdownMenu {
+  animation: ax-menu-in var(--ax-motion-standard) var(--ax-ease-out);
+  transform-origin: top left;
+}
+.empty-state {
+  animation: ax-message-in 320ms var(--ax-ease-out);
+}
+.live-reasoning:not([hidden]) {
+  animation: ax-fade-in var(--ax-motion-standard) ease-out;
+}
+/* Never animate live-answer descendants: markdown is rebuilt each frame. */
+
+:is(.btn-action, .btn-primary, .btn-secondary, .btn-new-persona,
+    .btn-new-agent-chat, .btn-send, .btn-stop, .btn-close-modal, .quick-model-btn) {
+  transition: transform var(--ax-motion-quick) var(--ax-ease-control),
+    background-color var(--ax-motion-standard) ease,
+    border-color var(--ax-motion-standard) ease,
+    color var(--ax-motion-quick) ease,
+    opacity var(--ax-motion-quick) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  :is(.btn-action, .btn-primary, .btn-secondary, .btn-new-persona,
+      .btn-new-agent-chat, .btn-send, .quick-model-btn):not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+  .starter-card:hover { transform: translateY(-2px); }
+  :is(.agent-card-header, .persona-item, .sub-session-item):hover {
+    border-color: var(--ax-border);
+  }
+}
+:is(.btn-action, .btn-primary, .btn-secondary, .btn-new-persona,
+    .btn-new-agent-chat, .btn-send, .btn-stop, .btn-close-modal,
+    .quick-model-btn):not(:disabled):active {
+  transform: translateY(0) scale(.97);
+  transition-duration: 70ms;
+}
+:is(.agent-card, .agent-card-header, .persona-item, .sub-session-item,
+    .chat-model-menu-item, .starter-card, .tool-card, .thinking-accordion) {
+  transition: background-color var(--ax-motion-standard) ease,
+    border-color var(--ax-motion-standard) ease,
+    color var(--ax-motion-quick) ease,
+    transform var(--ax-motion-standard) var(--ax-ease-out);
+}
+.input-box {
+  transition: border-color var(--ax-motion-standard) ease,
+    background-color var(--ax-motion-standard) ease;
+}
+.input-box:focus-within {
+  border-color: var(--ax-primary);
+  outline: 2px solid color-mix(in srgb, var(--ax-primary) 12%, transparent);
+  outline-offset: 2px;
+}
+:where(button, [role="button"], summary):focus-visible {
+  outline: 2px solid var(--ax-focus);
+  outline-offset: 3px;
+}
+/* Full-workspace interaction layer. No timers or per-token observers. */
+button:not(:disabled), [role="button"], summary, .btn-new-agent-chat,
+.agent-card-header, .sub-session-item, .starter-card {
+  transition: transform var(--ax-motion-quick) var(--ax-ease-control),
+    opacity var(--ax-motion-standard) ease,
+    color var(--ax-motion-standard) ease,
+    background-color var(--ax-motion-standard) ease,
+    border-color var(--ax-motion-standard) ease;
+}
+button:not(:disabled):active, [role="button"]:active,
+.agent-card-header:active, .sub-session-item:active { transform: scale(.98); }
+button:disabled { transition: opacity var(--ax-motion-standard) ease; }
+.form-input, .form-textarea, .search-input, select, input[type="checkbox"] {
+  transition: border-color var(--ax-motion-standard) ease,
+    background-color var(--ax-motion-standard) ease,
+    color var(--ax-motion-standard) ease, opacity var(--ax-motion-standard) ease;
+}
+:is(.form-input, .form-textarea, .search-input, select):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ax-focus) 40%, transparent);
+  outline-offset: 2px;
+}
+input[type="checkbox"] { accent-color: var(--ax-primary); }
+.status-badge, .message-model-badge, .agent-sessions-count, .count-badge {
+  transition: color var(--ax-motion-standard) ease,
+    background-color var(--ax-motion-standard) ease,
+    border-color var(--ax-motion-standard) ease;
+}
+.agent-toggle, .tool-card-toggle, .thinking-toggle {
+  transition: transform var(--ax-motion-standard) var(--ax-ease-out);
+}
+/* Display transitions keep closing surfaces rendered until the fade finishes. */
+@supports (transition-behavior: allow-discrete) {
+  .modal-backdrop {
+    opacity: 0;
+    transition: opacity 160ms ease, display 160ms allow-discrete;
+  }
+  .modal-backdrop.open { opacity: 1; }
+  .modal-backdrop:not(.open) { pointer-events: none; }
+  @starting-style { .modal-backdrop.open { opacity: 0; } }
+}
+.agent-sessions-container, .tool-card-body {
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity var(--ax-motion-standard) ease,
+    transform var(--ax-motion-standard) var(--ax-ease-out),
+    display var(--ax-motion-standard) allow-discrete;
+}
+.agent-card.expanded .agent-sessions-container,
+.tool-card.open .tool-card-body { opacity: 1; transform: translateY(0); }
+@starting-style {
+  .agent-card.expanded .agent-sessions-container,
+  .tool-card.open .tool-card-body { opacity: 0; transform: translateY(-3px); }
+}
+/* Height interpolation is limited to explicit accordion clicks, never chat. */
+@supports (interpolate-size: allow-keywords) {
+  .agent-sessions-container {
+    interpolate-size: allow-keywords;
+    height: 0;
+    transition: height 220ms var(--ax-ease-out), opacity 180ms ease,
+      display 220ms allow-discrete;
+  }
+  .agent-card.expanded .agent-sessions-container { height: auto; }
+  @starting-style { .agent-card.expanded .agent-sessions-container { height: 0; } }
+}
+.live-reasoning[open] .live-reasoning-text {
+  animation: ax-fade-in var(--ax-motion-standard) ease-out;
+}
+.starter-prompts .starter-card { animation: ax-message-in 280ms var(--ax-ease-out); }
+.starter-prompts .starter-card:nth-child(2) { animation-duration: 340ms; }
+.starter-prompts .starter-card:nth-child(3) { animation-duration: 400ms; }
+.btn-scroll-bottom { transition: opacity 160ms ease, transform 180ms var(--ax-ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):hover { translate: 0 -1px; }
+  .agent-card-header:hover .agent-avatar { transform: scale(1.06); }
+  .sub-session-item:hover .sub-session-icon { opacity: 1; }
+}
+.agent-avatar, .sub-session-icon {
+  transition: transform 180ms var(--ax-ease-out), opacity 180ms ease;
+}
+
+/* Honor accessibility preferences, including pre-existing spinner/dot effects.
+   Do not disable auto-follow: it is a functional, instant scroll operation. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  :is(button, .starter-card):hover,
+  :is(button, .starter-card):active { transform: none !important; translate: none !important; }
+}

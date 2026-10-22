@@ -1,0 +1,88 @@
+✔ actual sync handler settles without the original delayed sb exception (1.7645ms)
+✔ snapshot plan covers distinct cards, supporting files, exact values, and underscored persona IDs (5.7079ms)
+✔ real HTTP fixture: complete backup verifies cards and immutable snapshot and survives cloud-only download (62.1374ms)
+✔ HTTP 400 cannot publish a complete backup or expose raw backend content (8.2979ms)
+✔ HTTP 401 cannot publish a complete backup or expose raw backend content (4.118ms)
+✔ HTTP 403 cannot publish a complete backup or expose raw backend content (4.2379ms)
+✔ HTTP 409 cannot publish a complete backup or expose raw backend content (4.0012ms)
+✔ HTTP 413 cannot publish a complete backup or expose raw backend content (3.9635ms)
+✔ HTTP 429 cannot publish a complete backup or expose raw backend content (5.004ms)
+✔ HTTP 500 cannot publish a complete backup or expose raw backend content (4.0072ms)
+✔ pagination exhausts server pages even if server page cap is smaller than requested (12.2975ms)
+✔ tampered cloud snapshot fails integrity validation (11.2546ms)
+✔ mid-operation account change stops writes and cannot claim complete (2.6674ms)
+✔ request timeout terminates the operation and releases the admission guard (30.0569ms)
+✔ cancellation during an HTTP request is terminal and leaves no complete backup (30.7728ms)
+✔ overlapping operations are rejected without queuing a second upload (12.5107ms)
+✔ local edits during upload prevent a latest-data success claim (9.0668ms)
+✔ unsafe, corrupt and Windows-alias snapshot paths are rejected before any HTTP write (0.3788ms)
+✔ controller restores controls and reports verified counts rather than a stuck timer (0.2873ms)
+✔ UI and native bindings expose verified backup and non-destructive cloud recovery without auto-sync promises (0.8124ms)
+✖ snapshot history is excluded from persona readback and only one selected recovery envelope is fetched (9.8336ms)
+✖ cancellation during final snapshot verification cannot turn into success (9.2693ms)
+✔ controller cloud recovery writes only the downloaded verified snapshot to a new native folder (0.3068ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 21
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 377.2337
+
+✖ failing tests:
+
+test at tests\cloud-sync.test.cjs:138:1
+✖ snapshot history is excluded from persona readback and only one selected recovery envelope is fetched (9.8336ms)
+  AssertionError [ERR_ASSERTION]: Persona verification must exclude full historical envelopes
+  + actual - expected
+  
+  + [
+  +   {
+  +     method: 'GET',
+  +     path: '/rest/v1/cloud_personas',
+  +     query: {
+  +       limit: '200',
+  +       offset: '0',
+  +       order: 'id.asc',
+  +       select: '*',
+  +       user_id: 'eq.user-a'
+  +     }
+  +   },
+  +   {
+  +     method: 'GET',
+  +     path: '/rest/v1/cloud_personas',
+  +     query: {
+  +       limit: '200',
+  +       offset: '1',
+  +       order: 'id.asc',
+  +       select: '*',
+  +       user_id: 'eq.user-a'
+  +     }
+  +   }
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\cloud-sync.test.cjs:141:9)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [ { method: 'GET', path: '/rest/v1/cloud_personas', query: [Object] }, { method: 'GET', path: '/rest/v1/cloud_personas', query: [Object] } ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\cloud-sync.test.cjs:145:1
+✖ cancellation during final snapshot verification cannot turn into success (9.2693ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\cloud-sync.test.cjs:148:2)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }

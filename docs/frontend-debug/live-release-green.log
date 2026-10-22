@@ -1,0 +1,18 @@
+PASS rapid real IPC history selection stays on the latest chat {"attempts":30,"wrong":0}
+PASS generation saves only to its originating chat after navigation {"originSaved":true,"otherUntouched":true}
+PASS Stop interrupts a request while upstream headers are silent {"cancelMs":9}
+PASS stopped partial answer persists exactly once {"partialSaved":true}
+PASS old request completion cannot reset a newer request {"newRequestRetainedControls":true}
+PASS stream completion does not steal focus from an open dialog {"focusPreserved":true}
+PASS runtime reduced motion cancels already-running workspace animation {"playState":"idle"}
+PASS provider markdown cannot execute embedded HTML handlers {"unsafeHandlerBlocked":true}
+PASS provider errors preserve partial output and remain visibly errors {"partialPreserved":true,"errorVisible":true}
+PASS active turn survives navigating away and back without duplicate rows {"reattachedExactlyOnce":true}
+PASS all streamed output follows latest at multiple viewport sizes {"samples":80,"maxGap":0,"horizontalOverflow":0}
+PASS real pointer, keyboard, RTL input and dialog focus restoration {"nativePointer":true,"arabicInputPreserved":true,"focusRestored":true}
+CSP_ACTIVE true true
+PASS CSP, hostile markdown and link protocols enforce a local privilege boundary {"evalBlocked":true,"unsafeHtmlRemoved":true,"cspPresent":true}
+PASS failed index update retries exactly once without hiding unsaved output {"retryAvailable":true,"exactlyOnce":true}
+PASS native storage scope and unsafe-link guards reject invalid requests {"unsafeLinksRejected":3,"scopeGuard":true}
+PASS render telemetry has no uncaught errors and stays within the fixture budget {"renders":508,"p95Ms":0.5,"maxMs":3.4000000953674316,"maxMarkdownChars":2850,"longTasks":2}
+STABILIZATION_LIVE_PASSED

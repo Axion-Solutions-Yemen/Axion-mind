@@ -1,0 +1,10 @@
+PASS history responses cannot overwrite a newer selection {"attempts":30,"wrong":0}
+PASS generation saves only to its originating chat after navigation {"originSaved":true,"otherUntouched":true}
+PASS Stop interrupts a request while upstream headers are silent {"cancelMs":12}
+PASS stopped partial answer persists exactly once {"partialSaved":true}
+PASS old request completion cannot reset a newer request {"newRequestRetainedControls":true}
+PASS stream completion does not steal focus from an open dialog {"focusPreserved":true}
+PASS runtime reduced motion cancels already-running workspace animation {"playState":"idle"}
+HTML_PROBE <p><img src="missing.png">Safe text.<img src="missing.png">Safe text.<img src="missing.png">Safe text.<img src="missing.png">Safe text.<img src="missing.png">Safe text.<img src="mi
+PASS provider markdown cannot execute embedded HTML handlers {"unsafeHandlerBlocked":true}
+STABILIZATION_LIVE_PASSED

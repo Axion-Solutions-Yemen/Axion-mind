@@ -1,0 +1,10 @@
+{
+  "id": "anti_slop_vetting_rule",
+  "title": "Anti-Slop Cannon Vetting",
+  "category": "Blacklist",
+  "rules": [
+    "Immediately disqualify candidates or deal proposals that output generic, middle-of-the-road LLM boilerplate without deep domain nuance.",
+    "Reject zero-context first drafts: force minimum one round of iterative critique focusing on what to cut, what to keep, and where the blind spots are.",
+    "Calibrate AI simulations against cold reality: ingest meeting transcripts and financial actuals to update working models rather than relying on hypothetical outputs."
+  ]
+}

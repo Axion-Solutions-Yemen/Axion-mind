@@ -1,0 +1,11 @@
+✔ automatic backup is opt-in, verifies once and skips unchanged data (6.832ms)
+✔ switching accounts revokes prior consent even when returning to a previously enabled account (1.0627ms)
+✔ disabling during an upload cancels it and ignores late success (0.7268ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 69.1135

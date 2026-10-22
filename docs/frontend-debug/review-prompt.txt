@@ -1,0 +1,31 @@
+You are an independent, read-only code review agent.
+Examine the following specific files in D:/Side-Projects/StartUp/personas_hub_tauri:
+- ui/index.html
+- ui/chat-app.js
+- ui/safe-markdown.js
+- ui/dialog-accessibility.js
+- ui/workspace-motion.js
+- src/main.rs
+- src/llm.rs
+- src/chat_cancel.rs
+- src/chat_store.rs
+- src/app_paths.rs
+- tauri.conf.json
+- capabilities/default.json
+- Cargo.toml
+
+Focus strictly on:
+1. Data loss and message persistence bugs (especially across sessions/chats, race conditions during streaming, Stop generation, or retries).
+2. XSS, privileged IPC bypass, and arbitrary link/command execution.
+3. Content-Security-Policy (CSP) correctness and browser execution boundary.
+4. Hardcoded secrets, packaging vulnerabilities, or API token leakage.
+5. Concurrency / cancellation issues.
+
+Return a clear, structured Markdown report. For every issue found, specify:
+- File and exact line number (or code snippet).
+- Nature of the issue (Security Concern, Logic Error, or High-Impact Polish).
+- Concrete failure scenario or exploit vector.
+- Recommended remediation.
+
+If an area is well-defended, note it briefly. Conclude with an overall verdict: PASS or FAIL.
+Do NOT modify any files. Do NOT execute destructive tests.

@@ -1,0 +1,32 @@
+✖ actual history loader ignores reverse-order responses across 30 schedules (1.9476ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 72.1626
+
+✖ failing tests:
+
+test at tests\history-race.test.cjs:3:1
+✖ actual history loader ignores reverse-order responses across 30 schedules (1.9476ms)
+  AssertionError [ERR_ASSERTION]: stale response overwrote selected chat at schedule 0
+  + actual - expected
+  
+    [
+      'b',
+  +   'a'
+    ]
+  
+      at TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\history-race.test.cjs:14:10)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [ 'b', 'a' ],
+    expected: [ 'b' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

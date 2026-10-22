@@ -1,0 +1,6 @@
+test_reads_actual_backup_and_customer_bytes_not_just_manifest_presence (__main__.PreservationTest.test_reads_actual_backup_and_customer_bytes_not_just_manifest_presence) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.004s
+
+OK

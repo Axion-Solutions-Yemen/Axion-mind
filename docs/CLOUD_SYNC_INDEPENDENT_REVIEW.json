@@ -1,0 +1,71 @@
+{
+  "reviewer": "Independent Codex CLI, read-only source review",
+  "initial": {
+    "passed": false,
+    "security_concerns": [],
+    "logic_errors": [
+      {
+        "id": "L1",
+        "severity": "high",
+        "locations": [
+          "src/backup.rs:27-29",
+          "src/backup.rs:97-101"
+        ],
+        "finding": "Filesystem inspection errors can silently omit entire data categories.",
+        "scenario": "Path::exists() returns false on metadata errors as well as missing paths. If inspecting sessions or personas_data fails during both capture passes, that directory is skipped twice. The matching partial inventories then qualify as a complete snapshot, omitting session metadata or supporting knowledge."
+      },
+      {
+        "id": "L2",
+        "severity": "medium",
+        "locations": [
+          "ui/cloud-sync.js:116-123",
+          "ui/cloud-sync.js:153",
+          "ui/cloud-sync.js:165-169"
+        ],
+        "finding": "Backup verification and latest-snapshot recovery download the entire snapshot history.",
+        "scenario": "Every recovery snapshot contains its full raw files in config_json. Both operations select all columns and paginate to exhaustion. With 100 snapshots containing 10 MiB each, recovering one snapshot downloads and retains approximately 1 GiB before JSON overhead. This creates increasing memory pressure and timeout risk precisely when recovery is needed."
+      },
+      {
+        "id": "L3",
+        "severity": "medium",
+        "locations": [
+          "ui/cloud-sync.js:79-81",
+          "ui/cloud-sync.js:160-162",
+          "ui/index.html:3736"
+        ],
+        "finding": "Cancellation and timeout are ignored during the final local verification.",
+        "scenario": "After cloud readback, snapshotNow awaits export_cloud_snapshot. If the user cancels or the overall deadline expires during that export, an unchanged snapshot still leads directly to status complete because ctx.check() is never called again. The UI reports a verified completion despite cancellation."
+      }
+    ],
+    "suggestions": [
+      {
+        "for": "L1",
+        "action": "Inspect each category with an error-preserving metadata call. Skip only an explicitly missing optional category; abort on other inspection errors."
+      },
+      {
+        "for": "L2",
+        "action": "Restrict persona readback to expected persona rows. Fetch only the selected recovery snapshot; use metadata-only queries if a snapshot history is needed."
+      },
+      {
+        "for": "L3",
+        "action": "Call ctx.check() after final asynchronous verification and immediately before publishing completion."
+      },
+      {
+        "action": "Add regression coverage for inaccessible category roots, multiple large snapshot versions, and cancellation during snapshotNow."
+      }
+    ],
+    "summary": "Static review found three correctness issues. No files were edited, tests executed, or network calls made. No confirmed security defect was identified in the inspected scope; deployed RLS and second-device recovery remain unverified."
+  },
+  "focused_re_review": {
+    "passed": true,
+    "security_concerns": [],
+    "logic_errors": [],
+    "suggestions": [],
+    "summary": "Focused static review confirms all three fixes: category inspection rejects errors and dangling links; persona readback excludes snapshot history and download requests one envelope; cancellation is checked after snapshotNow and before success. Regression tests cover the reported scenarios. No remaining genuine bugs or nearby introduced risks found. Tests were not executed."
+  },
+  "execution": "Reviewer did not run tests or cloud operations; parent executed RED/GREEN regressions and release integration.",
+  "failed_alternatives": [
+    "delegate_f53e4797 failed before producing review",
+    "Gemini web review request timed out before producing verdict"
+  ]
+}

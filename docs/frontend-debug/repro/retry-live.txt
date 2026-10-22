@@ -1,0 +1,15 @@
+ await scenario('failed index update retries exactly once without hiding unsaved output',async()=>{
+  await choose('alpha_one');const index=path.join(hub,'sessions/alpha.json'),old=fs.readFileSync(index);fs.writeFileSync(index,'broken QA index');
+  try{
+   await send('RETRY');await waitFor(()=>requests.some(r=>r.text==='RETRY'));await idle();
+   assert.equal(await c.evaluate("!!document.querySelector('.stream-error button')"),true,'missing save retry action');
+   await choose('beta_one');await choose('alpha_one');assert.equal(await c.evaluate("[...document.querySelectorAll('.message-row.user')].filter(e=>e.textContent.includes('RETRY')).length"),1,'unsaved turn duplicated on navigation');
+   fs.writeFileSync(index,old);await c.evaluate("document.querySelector('.stream-error button').click()");await waitFor(()=>c.evaluate("!document.querySelector('.stream-error button')"));
+   assert.equal(chat('alpha_one').filter(m=>m.role==='user'&&m.content==='RETRY').length,1);return {retryAvailable:true,exactlyOnce:true};
+  }finally{fs.writeFileSync(index,old);}
+ });
+ await scenario('native storage scope and unsafe-link guards reject invalid requests',async()=>{
+  const before=fs.readFileSync(path.join(hub,'chats/alpha_one.json'));
+  const results=await c.evaluate(`(async()=>{const rejected=[];for(const url of ['javascript:alert(1)','file:///C:/Windows/win.ini','https://user:secret@example.com']){try{await invoke('open_chat_link',{url});rejected.push(false);}catch(_){rejected.push(true);}}let scopeRejected=false;try{await invoke('append_persona_turn',{sessionId:'alpha_one',requestId:'wrong-scope',message:'u',response:'a',model:null,scope:'invalid'});}catch(_){scopeRejected=true;}return {rejected,scopeRejected};})()`);
+  assert.ok(results.rejected.every(Boolean));assert.equal(results.scopeRejected,true);assert.ok(before.equals(fs.readFileSync(path.join(hub,'chats/alpha_one.json'))));return {unsafeLinksRejected:3,scopeGuard:true};
+ });

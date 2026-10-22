@@ -1,0 +1,102 @@
+{
+  "binary": "D:\\Side-Projects\\StartUp\\personas_hub_tauri\\target\\debug\\axion-mind.exe",
+  "sandbox": "C:\\Users\\AR-Qamzawi\\AppData\\Local\\hermes\\cache\\scratch\\axion-stability-Nvrb13",
+  "results": [
+    {
+      "name": "history responses cannot overwrite a newer selection",
+      "passed": true,
+      "detail": {
+        "attempts": 30,
+        "wrong": 0
+      }
+    },
+    {
+      "name": "generation saves only to its originating chat after navigation",
+      "passed": true,
+      "detail": {
+        "originSaved": true,
+        "otherUntouched": true
+      }
+    },
+    {
+      "name": "Stop interrupts a request while upstream headers are silent",
+      "passed": true,
+      "detail": {
+        "cancelMs": 12
+      }
+    },
+    {
+      "name": "stopped partial answer persists exactly once",
+      "passed": true,
+      "detail": {
+        "partialSaved": true
+      }
+    },
+    {
+      "name": "old request completion cannot reset a newer request",
+      "passed": true,
+      "detail": {
+        "newRequestRetainedControls": true
+      }
+    },
+    {
+      "name": "stream completion does not steal focus from an open dialog",
+      "passed": false,
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'btnCloseModal'\n- 'modalPersonaName'\n"
+    },
+    {
+      "name": "runtime reduced motion cancels already-running workspace animation",
+      "passed": true,
+      "detail": {
+        "playState": "idle"
+      }
+    },
+    {
+      "name": "provider markdown cannot execute embedded HTML handlers",
+      "passed": true,
+      "detail": {
+        "unsafeHandlerBlocked": true
+      }
+    },
+    {
+      "name": "provider errors preserve partial output and remain visibly errors",
+      "passed": true,
+      "detail": {
+        "partialPreserved": true,
+        "errorVisible": true
+      }
+    },
+    {
+      "name": "active turn survives navigating away and back without duplicate rows",
+      "passed": true,
+      "detail": {
+        "reattachedExactlyOnce": true
+      }
+    },
+    {
+      "name": "all streamed output follows latest at multiple viewport sizes",
+      "passed": true,
+      "detail": {
+        "samples": 79,
+        "maxGap": 0,
+        "horizontalOverflow": 0
+      }
+    },
+    {
+      "name": "real pointer, keyboard, RTL input and dialog focus restoration",
+      "passed": true,
+      "detail": {
+        "nativePointer": true,
+        "arabicInputPreserved": true,
+        "focusRestored": true
+      }
+    },
+    {
+      "name": "CSP, hostile markdown and link protocols enforce a local privilege boundary",
+      "passed": false,
+      "error": "unsafe-eval still permitted\n\nfalse !== true\n"
+    }
+  ],
+  "requestCount": 11,
+  "allPassed": false
+}

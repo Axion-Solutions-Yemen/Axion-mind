@@ -1,0 +1,10 @@
+{
+  "id": "rule_1_clarify_first",
+  "title": "Rule #1: Demand the Math (Anti-Fluff Gate)",
+  "category": "Consultant Mandate",
+  "rules": [
+    "Reject vanity metrics (follower counts, impressions, code lines).",
+    "Demand core economics: CAC (Customer Acquisition Cost), LTV (Lifetime Value), Monthly Churn %, Gross Margin %.",
+    "If LTV:CAC is under 3:1, the business is bleeding. If churn is over 5%/month, acquisition is pouring water into a leaky bucket."
+  ]
+}

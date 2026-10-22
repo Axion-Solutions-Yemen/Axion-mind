@@ -1,0 +1,48 @@
+{
+  "binary": "D:\\Side-Projects\\StartUp\\personas_hub_tauri\\target\\debug\\axion-mind.exe",
+  "sandbox": "C:\\Users\\AR-Qamzawi\\AppData\\Local\\hermes\\cache\\scratch\\axion-stability-Wr3U4B",
+  "results": [
+    {
+      "name": "history responses cannot overwrite a newer selection",
+      "passed": true,
+      "detail": {
+        "attempts": 30,
+        "wrong": 0
+      }
+    },
+    {
+      "name": "generation saves only to its originating chat after navigation",
+      "passed": false,
+      "error": "originating chat did not receive turn"
+    },
+    {
+      "name": "Stop interrupts a request while upstream headers are silent",
+      "passed": false,
+      "error": "connection remained open after Stop"
+    },
+    {
+      "name": "stopped partial answer persists exactly once",
+      "passed": false,
+      "error": "stopped turn was not persisted"
+    },
+    {
+      "name": "old request completion cannot reset a newer request",
+      "passed": true,
+      "detail": {
+        "newRequestRetainedControls": true
+      }
+    },
+    {
+      "name": "stream completion does not steal focus from an open dialog",
+      "passed": false,
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'chatInput'\n- 'modalPersonaName'\n"
+    },
+    {
+      "name": "runtime reduced motion cancels already-running workspace animation",
+      "passed": false,
+      "error": "Expected \"actual\" to be strictly unequal to:\n\n'running'"
+    }
+  ],
+  "requestCount": 6,
+  "allPassed": false
+}

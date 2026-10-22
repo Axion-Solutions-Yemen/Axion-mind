@@ -1,0 +1,31 @@
+✔ actual sync handler settles without the original delayed sb exception (1.3793ms)
+✔ snapshot plan covers distinct cards, supporting files, exact values, and underscored persona IDs (5.7395ms)
+✔ real HTTP fixture: complete backup verifies cards and immutable snapshot and survives cloud-only download (61.6071ms)
+✔ HTTP 400 cannot publish a complete backup or expose raw backend content (7.7712ms)
+✔ HTTP 401 cannot publish a complete backup or expose raw backend content (3.887ms)
+✔ HTTP 403 cannot publish a complete backup or expose raw backend content (3.7216ms)
+✔ HTTP 409 cannot publish a complete backup or expose raw backend content (3.78ms)
+✔ HTTP 413 cannot publish a complete backup or expose raw backend content (3.7306ms)
+✔ HTTP 429 cannot publish a complete backup or expose raw backend content (4.865ms)
+✔ HTTP 500 cannot publish a complete backup or expose raw backend content (3.8283ms)
+✔ pagination exhausts server pages even if server page cap is smaller than requested (10.9491ms)
+✔ tampered cloud snapshot fails integrity validation (9.1209ms)
+✔ mid-operation account change stops writes and cannot claim complete (2.6094ms)
+✔ request timeout terminates the operation and releases the admission guard (33.9533ms)
+✔ cancellation during an HTTP request is terminal and leaves no complete backup (30.1959ms)
+✔ overlapping operations are rejected without queuing a second upload (11.971ms)
+✔ local edits during upload prevent a latest-data success claim (8.6977ms)
+✔ unsafe, corrupt and Windows-alias snapshot paths are rejected before any HTTP write (0.3867ms)
+✔ controller restores controls and reports verified counts rather than a stuck timer (0.2894ms)
+✔ UI and native bindings expose verified backup and non-destructive cloud recovery without auto-sync promises (0.7977ms)
+✔ snapshot history is excluded from persona readback and only one selected recovery envelope is fetched (9.7065ms)
+✔ cancellation during final snapshot verification cannot turn into success (8.5244ms)
+✔ controller cloud recovery writes only the downloaded verified snapshot to a new native folder (0.1971ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 386.9809

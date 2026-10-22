@@ -1,0 +1,1 @@
+Evaluation exception: {"exceptionId":1,"text":"Uncaught (in promise)","lineNumber":0,"columnNumber":0,"exception":{"type":"string","value":"Command get_config not found"}}

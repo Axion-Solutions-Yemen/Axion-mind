@@ -1,0 +1,90 @@
+   Compiling axion-mind v0.2.0 (D:\Side-Projects\StartUp\personas_hub_tauri)
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:168:21
+    |
+168 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:530:21
+    |
+530 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: struct `ChatRequestPayload` is never constructed
+ --> src\llm.rs:9:12
+  |
+9 | pub struct ChatRequestPayload {
+  |            ^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `axion-mind` (bin "axion-mind" test) generated 3 warnings (3 duplicates)
+warning: `axion-mind` (bin "axion-mind") generated 3 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.23s
+     Running unittests src\main.rs (target\debug\deps\axion_mind-8a88329487bc6712.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\backup.rs (target\debug\deps\backup-c5e46045b781e5a3.exe)
+
+running 5 tests
+test backup_scope_tracks_the_real_storage_directory ... ok
+test recovery_rejects_unsafe_paths_corrupt_json_and_case_aliases_without_creating_files ... ok
+test snapshot_keeps_exact_customer_files_including_session_metadata ... ok
+test recovery_is_exact_and_never_overwrites_an_existing_directory ... ok
+test dangling_category_link_cannot_silently_disappear_from_a_backup ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\native_auth.rs (target\debug\deps\native_auth-2073adb4ac72c46b.exe)
+
+running 10 tests
+test live_supabase_google_readiness ... ignored, Explicit live provider-readiness check; no browser login and no cloud writes
+test native_flow_registry_rejects_overlap_and_cancels_the_current_attempt ... ok
+test callback_only_accepts_code_for_the_exact_random_path ... ok
+test pkce_matches_rfc7636_sha256_vector ... ok
+test windows_session_encryption_roundtrips_and_rejects_tampering ... ok
+test disabled_google_provider_never_opens_a_browser ... ok
+test session_store_uses_encrypted_bytes_and_can_be_cleared_without_touching_other_data ... ok
+test expired_session_refreshes_then_checks_user_identity_with_fixture_server ... ok
+test native_cancellation_releases_the_callback_port ... ok
+test oauth_pkce_callback_exchanges_code_and_validates_identity_with_fixture_server ... ok
+
+test result: ok. 9 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+    Checking axion-mind v0.2.0 (D:\Side-Projects\StartUp\personas_hub_tauri)
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:168:21
+    |
+168 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:530:21
+    |
+530 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: struct `ChatRequestPayload` is never constructed
+ --> src\llm.rs:9:12
+  |
+9 | pub struct ChatRequestPayload {
+  |            ^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `axion-mind` (bin "axion-mind") generated 3 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.19s

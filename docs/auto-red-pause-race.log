@@ -1,0 +1,127 @@
+TAP version 13
+# Subtest: automatic backup is opt-in, verifies once and skips unchanged data
+ok 1 - automatic backup is opt-in, verifies once and skips unchanged data
+  ---
+  duration_ms: 7.5665
+  type: 'test'
+  ...
+# Subtest: switching accounts revokes prior consent even when returning to a previously enabled account
+ok 2 - switching accounts revokes prior consent even when returning to a previously enabled account
+  ---
+  duration_ms: 0.8959
+  type: 'test'
+  ...
+# Subtest: disabling during an upload cancels it and ignores late success
+ok 3 - disabling during an upload cancels it and ignores late success
+  ---
+  duration_ms: 0.5949
+  type: 'test'
+  ...
+# Subtest: network failures use increasing retries and retain unsaved status until verified
+ok 4 - network failures use increasing retries and retain unsaved status until verified
+  ---
+  duration_ms: 0.7672
+  type: 'test'
+  ...
+# Subtest: permission denial pauses automatic attempts until explicit re-enable
+ok 5 - permission denial pauses automatic attempts until explicit re-enable
+  ---
+  duration_ms: 0.5851
+  type: 'test'
+  ...
+# Subtest: verified manual backup metadata survives restart without a second upload
+ok 6 - verified manual backup metadata survives restart without a second upload
+  ---
+  duration_ms: 0.6452
+  type: 'test'
+  ...
+# Subtest: logout invalidates a late native inspection and revokes consent before reauthentication
+ok 7 - logout invalidates a late native inspection and revokes consent before reauthentication
+  ---
+  duration_ms: 0.5326
+  type: 'test'
+  ...
+# Subtest: real scheduler lifecycle checks every 30 seconds and stops without a late reschedule
+ok 8 - real scheduler lifecycle checks every 30 seconds and stops without a late reschedule
+  ---
+  duration_ms: 0.5518
+  type: 'test'
+  ...
+# Subtest: failed consent persistence cannot enable uploads in memory
+ok 9 - failed consent persistence cannot enable uploads in memory
+  ---
+  duration_ms: 0.6
+  type: 'test'
+  ...
+# Subtest: automatic authorization is bound to the active owner, storage and captured digest
+ok 10 - automatic authorization is bound to the active owner, storage and captured digest
+  ---
+  duration_ms: 0.5901
+  type: 'test'
+  ...
+# Subtest: controller forwards automatic settings without bypassing verified engine logic
+ok 11 - controller forwards automatic settings without bypassing verified engine logic
+  ---
+  duration_ms: 0.4171
+  type: 'test'
+  ...
+# Subtest: account UI binds automatic policy, truthful diagnostics and the native scoped inspector
+ok 12 - account UI binds automatic policy, truthful diagnostics and the native scoped inspector
+  ---
+  duration_ms: 0.9106
+  type: 'test'
+  ...
+# Subtest: all-account policy automatically enrolls each verified owner but preserves explicit per-account off
+ok 13 - all-account policy automatically enrolls each verified owner but preserves explicit per-account off
+  ---
+  duration_ms: 1.2203
+  type: 'test'
+  ...
+# Subtest: native disable fallback survives localStorage failure, logout and scheduler recreation
+ok 14 - native disable fallback survives localStorage failure, logout and scheduler recreation
+  ---
+  duration_ms: 0.3608
+  type: 'test'
+  ...
+# Subtest: disabled control remains usable offline and resumption cannot silently re-enable it
+ok 15 - disabled control remains usable offline and resumption cannot silently re-enable it
+  ---
+  duration_ms: 0.3461
+  type: 'test'
+  ...
+# Subtest: enabling is serialized against a concurrent inspection of the old native off marker
+ok 16 - enabling is serialized against a concurrent inspection of the old native off marker
+  ---
+  duration_ms: 0.3863
+  type: 'test'
+  ...
+# Subtest: offline startup has an unconditional native pause action without implying signed-in state
+ok 17 - offline startup has an unconditional native pause action without implying signed-in state
+  ---
+  duration_ms: 0.6112
+  type: 'test'
+  ...
+# Subtest: offline durable pause runs after an already-started native enable and remains paused
+not ok 18 - offline durable pause runs after an already-started native enable and remains paused
+  ---
+  duration_ms: 0.5567
+  type: 'test'
+  location: 'D:\\Side-Projects\\StartUp\\personas_hub_tauri\\tests\\auto-backup.test.cjs:105:1'
+  failureType: 'testCodeFailure'
+  error: 'f.scheduler.pauseOffline is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\auto-backup.test.cjs:109:27)
+    async Test.run (node:internal/test_runner/test:1404:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:969:7)
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 17
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 76.68

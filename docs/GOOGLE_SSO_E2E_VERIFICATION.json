@@ -1,0 +1,70 @@
+{
+  "verified_at": "2026-10-21T20:44:38.724819+03:00",
+  "status": "passed",
+  "scope": "Actual Google OAuth through Zen and the native release app; not a fixture login",
+  "google_project": "gen-lang-client-0573839341",
+  "google_client_name": "Axion Mind Supabase",
+  "google_client_id": "795523159769-9andjcac2gd6tvr2ku99cj1srh7d1i43.apps.googleusercontent.com",
+  "google_redirect_uri": "https://kefxeysyvtdxxdupkapa.supabase.co/auth/v1/callback",
+  "google_audience": "External, Testing; arafat.trans@gmail.com allowed",
+  "supabase_google_enabled": true,
+  "supabase_loopback_allowlist": "http://127.0.0.1:43821/auth/callback/*",
+  "server_verified_identity": {
+    "verified": true,
+    "id": "3ba63a12-104c-4786-989a-68563f6a7a86",
+    "email": "arafat.trans@gmail.com",
+    "providers": [
+      "email",
+      "google"
+    ],
+    "googleIdentity": true,
+    "tables": {
+      "cloud_personas": {
+        "status": 200,
+        "count": 1
+      },
+      "knowledge_cards": {
+        "status": 200,
+        "count": 22
+      },
+      "chat_conversations": {
+        "status": 200,
+        "count": 13
+      }
+    },
+    "localStorageSessionAbsent": true
+  },
+  "lifecycle": {
+    "restart_hydration": true,
+    "sign_out_removed_dpapi_session": true,
+    "fresh_google_sign_in_after_logout": true,
+    "final_normal_profile_restart_email_confirmed_by_uia": "arafat.trans@gmail.com"
+  },
+  "storage": {
+    "session_path": "C:\\Users\\AR-Qamzawi\\AppData\\Local\\PersonasHub\\auth\\session.dpapi",
+    "dpapi_session_exists": true,
+    "customer_files_compared": 77,
+    "customer_file_hashes_unchanged": true
+  },
+  "release": {
+    "path": "D:/Side-Projects/StartUp/personas_hub_tauri/target/release/axion-mind.exe",
+    "pid": 47708,
+    "sha256": "d89933039698b19b1ebc4b641f78c5d19485617e09f51d89305e289e4cafb1c4"
+  },
+  "tests": {
+    "native_passed": 9,
+    "native_ignored_live_readiness": 1,
+    "frontend_passed": 6
+  },
+  "cleanup": {
+    "zen_debug_port_9224_closed": true,
+    "controller_port_9225_closed": true,
+    "webview_debug_port_43823_closed": true,
+    "oauth_callback_port_43821_closed": true
+  },
+  "limitations": [
+    "OAuth audience remains External/Testing. A later read-only inspection of the live Google authorization redirect confirmed only email and profile scopes. Google's basic Sign in with Google exception permits users outside the test-user list for these scopes. A fresh customer account and cross-account data isolation have not yet been tested end-to-end.",
+    "Cloud records were read for access verification; this task did not perform a new bulk cloud synchronization.",
+    "Independent reviewer failed at its model service; no separate security approval is claimed."
+  ]
+}

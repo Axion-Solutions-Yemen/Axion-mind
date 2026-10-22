@@ -1,0 +1,57 @@
+{
+  "binary": "D:\\Side-Projects\\StartUp\\personas_hub_tauri\\target\\debug\\axion-mind.exe",
+  "sandbox": "C:\\Users\\AR-Qamzawi\\AppData\\Local\\hermes\\cache\\scratch\\axion-stability-sDIVmh",
+  "results": [
+    {
+      "name": "history responses cannot overwrite a newer selection",
+      "passed": true,
+      "detail": {
+        "attempts": 30,
+        "wrong": 0
+      }
+    },
+    {
+      "name": "generation saves only to its originating chat after navigation",
+      "passed": true,
+      "detail": {
+        "originSaved": true,
+        "otherUntouched": true
+      }
+    },
+    {
+      "name": "Stop interrupts a request while upstream headers are silent",
+      "passed": true,
+      "detail": {
+        "cancelMs": 14
+      }
+    },
+    {
+      "name": "stopped partial answer persists exactly once",
+      "passed": true,
+      "detail": {
+        "partialSaved": true
+      }
+    },
+    {
+      "name": "old request completion cannot reset a newer request",
+      "passed": false,
+      "error": "new request lost Stop controls\n\nfalse !== true\n"
+    },
+    {
+      "name": "stream completion does not steal focus from an open dialog",
+      "passed": true,
+      "detail": {
+        "focusPreserved": true
+      }
+    },
+    {
+      "name": "runtime reduced motion cancels already-running workspace animation",
+      "passed": true,
+      "detail": {
+        "playState": "idle"
+      }
+    }
+  ],
+  "requestCount": 5,
+  "allPassed": false
+}

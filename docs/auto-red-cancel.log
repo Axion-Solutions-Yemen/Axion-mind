@@ -1,0 +1,30 @@
+✔ automatic backup is opt-in, verifies once and skips unchanged data (6.8397ms)
+✔ switching accounts revokes prior consent even when returning to a previously enabled account (0.9236ms)
+✖ disabling during an upload cancels it and ignores late success (1.2974ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 2
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 74.6309
+
+✖ failing tests:
+
+test at tests\auto-backup.test.cjs:24:1
+✖ disabling during an upload cancels it and ignores late success (1.2974ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\auto-backup.test.cjs:29:9)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

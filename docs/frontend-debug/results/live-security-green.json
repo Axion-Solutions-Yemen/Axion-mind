@@ -1,0 +1,64 @@
+{
+  "binary": "D:\\Side-Projects\\StartUp\\personas_hub_tauri\\target\\debug\\axion-mind.exe",
+  "sandbox": "C:\\Users\\AR-Qamzawi\\AppData\\Local\\hermes\\cache\\scratch\\axion-stability-mD26rM",
+  "results": [
+    {
+      "name": "history responses cannot overwrite a newer selection",
+      "passed": true,
+      "detail": {
+        "attempts": 30,
+        "wrong": 0
+      }
+    },
+    {
+      "name": "generation saves only to its originating chat after navigation",
+      "passed": true,
+      "detail": {
+        "originSaved": true,
+        "otherUntouched": true
+      }
+    },
+    {
+      "name": "Stop interrupts a request while upstream headers are silent",
+      "passed": true,
+      "detail": {
+        "cancelMs": 10
+      }
+    },
+    {
+      "name": "stopped partial answer persists exactly once",
+      "passed": true,
+      "detail": {
+        "partialSaved": true
+      }
+    },
+    {
+      "name": "old request completion cannot reset a newer request",
+      "passed": true,
+      "detail": {
+        "newRequestRetainedControls": true
+      }
+    },
+    {
+      "name": "stream completion does not steal focus from an open dialog",
+      "passed": true,
+      "detail": {
+        "focusPreserved": true
+      }
+    },
+    {
+      "name": "runtime reduced motion cancels already-running workspace animation",
+      "passed": true,
+      "detail": {
+        "playState": "idle"
+      }
+    },
+    {
+      "name": "provider markdown cannot execute embedded HTML handlers",
+      "passed": false,
+      "error": "unsafe handler survived rendering\n+ actual - expected\n\n+ 'window.__qaXss=true'\n- null\n"
+    }
+  ],
+  "requestCount": 7,
+  "allPassed": false
+}

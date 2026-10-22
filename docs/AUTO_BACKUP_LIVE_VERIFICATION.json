@@ -1,0 +1,37 @@
+{
+  "verified_at": "2026-10-21T21:04:12.747Z",
+  "email": "arafat.trans@gmail.com",
+  "owner": "3ba63a12-104c-4786-989a-68563f6a7a86",
+  "counts": {
+    "personas": 1,
+    "chats": 19,
+    "frameworks": 35,
+    "anecdotes": 23,
+    "files": 89,
+    "knowledgeFiles": 63,
+    "sessionFiles": 6
+  },
+  "digest": "0b6c0b3a32857192efdd7145f2f68cb5d1d4a0d3751c18d4e2481a89a5a91e0a",
+  "default_automatic_upload": true,
+  "cloud_download_matches": true,
+  "unchanged_snapshot_not_uploaded": true,
+  "native_off_on_roundtrip": {
+    "disabled": true,
+    "enabled": false,
+    "state": "verified"
+  },
+  "original_preservation": {
+    "exact_original_files": 84,
+    "session_index_files_extended": 1,
+    "original_session_entries_preserved": 6,
+    "all_original_customer_content_preserved": true
+  },
+  "actual_ui_summary": "Local files match the last verified cloud backup.\nLast verified: 10/22/2026, 12:04:04 AM\nAutomatic backups: ON while this app is open",
+  "limits": [
+    "App must remain open",
+    "Only currently authenticated account receives uploads",
+    "Shared local workspace across sign-ins",
+    "No automatic download/merge/deletion",
+    "No actual second-Windows-machine or cross-account write-policy probe"
+  ]
+}

@@ -1,0 +1,29 @@
+✔ automatic backup is opt-in, verifies once and skips unchanged data (7.384ms)
+✔ switching accounts revokes prior consent even when returning to a previously enabled account (0.9116ms)
+✔ disabling during an upload cancels it and ignores late success (0.7223ms)
+✔ network failures use increasing retries and retain unsaved status until verified (0.9639ms)
+✔ permission denial pauses automatic attempts until explicit re-enable (0.5091ms)
+✔ verified manual backup metadata survives restart without a second upload (0.7605ms)
+✔ logout invalidates a late native inspection and revokes consent before reauthentication (0.6444ms)
+✖ real scheduler lifecycle checks every 30 seconds and stops without a late reschedule (0.2916ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 7
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 66.7338
+
+✖ failing tests:
+
+test at tests\auto-backup.test.cjs:56:1
+✖ real scheduler lifecycle checks every 30 seconds and stops without a late reschedule (0.2916ms)
+  TypeError: f.scheduler.start is not a function
+      at TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\auto-backup.test.cjs:59:20)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7)

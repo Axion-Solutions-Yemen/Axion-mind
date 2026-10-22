@@ -1,0 +1,59 @@
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:168:21
+    |
+168 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:530:21
+    |
+530 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: struct `ChatRequestPayload` is never constructed
+ --> src\llm.rs:9:12
+  |
+9 | pub struct ChatRequestPayload {
+  |            ^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling axion-mind v0.2.0 (D:\Side-Projects\StartUp\personas_hub_tauri)
+warning: `axion-mind` (bin "axion-mind") generated 3 warnings
+error[E0425]: cannot find function `restore_new` in module `backup`
+  --> tests\backup.rs:23:13
+   |
+23 |     backup::restore_new(&snapshot,&dest).unwrap();assert_eq!(backup::capture(&dest).unwrap(),snapshot);
+   |             ^^^^^^^^^^^ not found in `backup`
+
+error[E0425]: cannot find function `restore_new` in module `backup`
+  --> tests\backup.rs:24:74
+   |
+24 |     fs::write(dest.join("personas.json"),"[1]").unwrap();assert!(backup::restore_new(&snapshot,&dest).is_err());assert_eq!(fs::read_...
+   |                                                                          ^^^^^^^^^^^ not found in `backup`
+
+error[E0425]: cannot find function `restore_new` in module `backup`
+  --> tests\backup.rs:31:25
+   |
+31 | ...   assert!(backup::restore_new(&json!({"version":1,"files":files}),&p.join("bad")).is_err(),"unsafe path admitted: {name}");asser...
+   |                       ^^^^^^^^^^^ not found in `backup`
+
+error[E0425]: cannot find function `restore_new` in module `backup`
+  --> tests\backup.rs:33:21
+   |
+33 |     assert!(backup::restore_new(&json!({"version":1,"files":{"personas.json":"not json"}}),&p.join("bad")).is_err());
+   |                     ^^^^^^^^^^^ not found in `backup`
+
+error[E0425]: cannot find function `restore_new` in module `backup`
+  --> tests\backup.rs:34:21
+   |
+34 |     assert!(backup::restore_new(&json!({"version":1,"files":{"personas.json":"[]","personas_data/A.json":"{}","personas_data/a.json"...
+   |                     ^^^^^^^^^^^ not found in `backup`
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `axion-mind` (test "backup") due to 5 previous errors

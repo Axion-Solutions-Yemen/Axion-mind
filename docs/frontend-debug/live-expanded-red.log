@@ -1,0 +1,23 @@
+PASS history responses cannot overwrite a newer selection {"attempts":30,"wrong":0}
+PASS generation saves only to its originating chat after navigation {"originSaved":true,"otherUntouched":true}
+PASS Stop interrupts a request while upstream headers are silent {"cancelMs":12}
+FAIL stopped partial answer persists exactly once CDP timed out for Runtime.evaluate
+PASS old request completion cannot reset a newer request {"newRequestRetainedControls":true}
+PASS stream completion does not steal focus from an open dialog {"focusPreserved":true}
+PASS runtime reduced motion cancels already-running workspace animation {"playState":"idle"}
+HTML_PROBE <p><img src="missing.png">Safe text.<img src="missing.png">Safe text.<img src="missing.png">Safe text.<img src="missing.png">Safe text.<img src="missing.png">Safe text.<img src="mi
+PASS provider markdown cannot execute embedded HTML handlers {"unsafeHandlerBlocked":true}
+PASS provider errors preserve partial output and remain visibly errors {"partialPreserved":true,"errorVisible":true}
+PASS active turn survives navigating away and back without duplicate rows {"reattachedExactlyOnce":true}
+PASS all streamed output follows latest at multiple viewport sizes {"samples":78,"maxGap":0,"horizontalOverflow":0}
+FAIL real pointer, keyboard, RTL input and dialog focus restoration focus was not restored to dialog trigger
++ actual - expected
+
++ ''
+- 'btnOpenNewPersonaModal'
+
+FAIL CSP, hostile markdown and link protocols enforce a local privilege boundary unsafe-eval still permitted
+
+false !== true
+
+Stabilization matrix contains failures

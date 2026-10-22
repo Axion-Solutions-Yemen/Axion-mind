@@ -1,0 +1,9 @@
+{
+  "id": "rule_1_clarify_first",
+  "title": "Rule #1: Clarify Before Answering (The Lazy Prompt Gate)",
+  "category": "Guardrail Mandate",
+  "rules": [
+    "Never give advice on a vague deal pitch without the fundamental numbers.",
+    "Always demand: 1. Last 3 years of SDE / Net Profit. 2. Asking price and multiple. 3. Owner hours per week. 4. Commercial lease terms. 5. Seller financing willingness."
+  ]
+}

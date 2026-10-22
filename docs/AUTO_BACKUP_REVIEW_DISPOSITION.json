@@ -1,0 +1,88 @@
+{
+  "source_reviews": [
+    {
+      "passed": false,
+      "security_concerns": [
+        {
+          "severity": "high",
+          "files": [
+            "ui/auto-backup.js:49-59",
+            "ui/auto-backup.js:13-23",
+            "ui/auto-backup.js:63"
+          ],
+          "issue": "Failed consent persistence can restore automatic uploads without fresh consent.",
+          "details": "If revocation during logout/account change throws, accountChanged silently clears its in-memory context while the persisted enabled flag and active key can remain unchanged. After storage recovers, returning to that account loads enabled=true because the active key still matches. Similarly, failed setEnabled(false) leaves persisted consent enabled, which a restart restores despite the reported 'Uploads remain off' error.",
+          "recommendation": "Keep revocation failures visible and retain an in-memory revocation barrier across account transitions. Attempt an independent persisted invalidation fallback; do not claim durable revocation when persistence failed."
+        }
+      ],
+      "logic_errors": [
+        {
+          "severity": "medium",
+          "files": [
+            "ui/auto-backup.js:41-43",
+            "ui/auto-backup.js:63",
+            "ui/index.html:3743-3745",
+            "ui/index.html:3813-3821"
+          ],
+          "issue": "An inspection failure prevents the user from disabling automatic backups.",
+          "details": "An offline/native inspection error publishes unavailable while retaining enabled consent. The UI disables the checkbox in that state, and context() returns null, preventing the handler from revoking consent even if invoked. Uploads can resume when inspection succeeds although the user could not turn them off during the outage.",
+          "recommendation": "Allow revocation using the existing consent identity without requiring a successful inspection. Require fresh inspection only when enabling."
+        }
+      ],
+      "suggestions": [
+        "Add regression cases for failed disable/logout persistence followed by storage recovery, same-account return, and scheduler recreation. The current persistence test covers failed enable only (tests/auto-backup.test.cjs:62-64).",
+        "Make load() transactional: it changes key and prefs before fallible storage operations finish; an existing ctx can then cause the next poll to skip the failed load (ui/auto-backup.js:13-23,29).",
+        "Strengthen the controller-forwarding test with a complete result including counts and assert successful completion. Its current stub triggers the controller's caught error path, but the test still passes (tests/auto-backup.test.cjs:71-73; ui/cloud-sync.js:195-197)."
+      ],
+      "summary": "Read-only source review found consent-revocation persistence and UI availability defects. No files changed, tests executed, credential/session files read, or network/cloud calls made. No second-device or RLS verification is claimed."
+    },
+    {
+      "passed": false,
+      "security_concerns": [],
+      "logic_errors": [
+        {
+          "severity": "medium",
+          "lines": "ui/auto-backup.js:8,35-37,73; ui/index.html:3745,3817",
+          "issue": "OFF remains unavailable after an offline app restart. The scheduler starts without an identity or enabled preference; failed inspection leaves it unavailable and unchecked, so the renderer disables the checkbox. The offline fix works only after successful inspection during the current run.",
+          "suggestion": "Restore the previously known owner/storage identity for offline revocation only, without treating it as authorization to upload."
+        },
+        {
+          "severity": "medium",
+          "lines": "ui/auto-backup.js:38,85-87; ui/index.html:3829-3830",
+          "issue": "Enabling can silently remain OFF if a concurrent poll observes the native disabled marker while setPolicy(false) is awaiting verification. That poll sets prefs.enabled=false; successful enable removes the denied barrier but never restores prefs.enabled. Subsequent polls do not reload the same identity.",
+          "suggestion": "Serialize policy changes with polling, or commit enabled=true after native success with generation and identity checks."
+        }
+      ],
+      "suggestions": [],
+      "summary": "Automatic enrollment is accepted as intended. The reviewed code supports network-independent native revocation and a session denial barrier, but two remaining state-handling gaps prevent a clean pass. Static review only; no tests executed or second-device/RLS claims."
+    },
+    {
+      "passed": false,
+      "security_concerns": [],
+      "logic_errors": [
+        {
+          "severity": "medium",
+          "citations": [
+            "src/main.rs:462-471",
+            "ui/auto-backup.js:85-87",
+            "ui/auto-backup.js:96",
+            "ui/index.html:3814-3818"
+          ],
+          "description": "Offline pause can overlap an in-flight enable operation. While enable awaits account verification before acquiring the session lock, pause can write the native disabled marker and report success. Enable can subsequently acquire the lock and clear that marker. pauseKnown invalidates the JavaScript epoch, but the epoch check occurs after the native write and does not undo it. JavaScript remains disabled, but the promised native durable pause has been removed; losing local metadata can restore default-enabled behavior.",
+          "suggestion": "Serialize the offline pause with enable mutations, ensuring a later pause writes its native disabled marker after any earlier enable completes."
+        }
+      ],
+      "suggestions": [],
+      "summary": "The two reported fixes address offline access and poll-versus-enable interference. One residual pause-versus-enable race remains. Static review only; no edits, tests, network access, credential access, or restarts performed. No RLS or device-execution approval is implied."
+    }
+  ],
+  "final_clean_independent_approval": false,
+  "findings_disposition": "Reported persistence, offline access, enable-poll and pause-enable race findings reproduced RED then corrected; final ordered-policy queue passed its regression and real release blocked-network pause. Final queue correction not independently re-reviewed.",
+  "latest_regression_evidence": [
+    "auto-red-pause-race.log",
+    "auto-final-node.log",
+    "auto-final-native.log",
+    "AUTO_BACKUP_LIVE_VERIFICATION.json"
+  ],
+  "policy_amendment": "User explicitly requested automatic backups for all accounts; defaultEnabled:true is intentional, authenticated active account only."
+}

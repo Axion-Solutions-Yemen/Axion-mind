@@ -1,0 +1,32 @@
+✖ actual sync handler settles without the original delayed sb exception (2.4963ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 55.1658
+
+✖ failing tests:
+
+test at tests\cloud-sync.test.cjs:8:1
+✖ actual sync handler settles without the original delayed sb exception (2.4963ms)
+  AssertionError [ERR_ASSERTION]: Got unwanted exception: Result callback must not leave progress stuck
+  Actual message: "sb is not defined"
+      at TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\cloud-sync.test.cjs:22:36)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: ReferenceError: sb is not defined
+        at evalmachine.<anonymous>:77:40
+        at getActual (node:assert:580:5)
+        at strict.doesNotThrow (node:assert:748:32)
+        at TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\cloud-sync.test.cjs:22:36)
+        at async Test.run (node:internal/test_runner/test:1404:7)
+        at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3),
+    expected: undefined,
+    operator: 'doesNotThrow',
+    diff: 'simple'
+  }

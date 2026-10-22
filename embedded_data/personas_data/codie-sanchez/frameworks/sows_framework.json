@@ -1,0 +1,11 @@
+{
+  "id": "sows_framework",
+  "title": "SOWS Acquisition Screening",
+  "category": "Deal Screening",
+  "rules": [
+    "S - Stale: Outdated website, no digital scheduling, paper invoices, zero SEO.",
+    "O - Old: Owner has run it for 15+ years and is mentally fatigued or retiring.",
+    "W - Weak: Has not raised prices in 3-5 years, leaking profit on un-optimized margins.",
+    "S - Simple: Essential service anyone can explain in 10 seconds. Recession-resistant."
+  ]
+}

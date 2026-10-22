@@ -1,0 +1,41 @@
+   Compiling axion-mind v0.2.0 (D:\Side-Projects\StartUp\personas_hub_tauri)
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:168:21
+    |
+168 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `has_terminal_error` is never read
+   --> src\llm.rs:530:21
+    |
+530 |                     has_terminal_error = true;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: function `scope_id` is never used
+ --> src\backup.rs:8:8
+  |
+8 | pub fn scope_id(root: &Path) -> Result<String,String> {
+  |        ^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `ChatRequestPayload` is never constructed
+ --> src\llm.rs:9:12
+  |
+9 | pub struct ChatRequestPayload {
+  |            ^^^^^^^^^^^^^^^^^^
+
+warning: `axion-mind` (bin "axion-mind") generated 4 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.23s
+     Running tests\backup.rs (target\debug\deps\backup-c5e46045b781e5a3.exe)
+
+running 1 test
+test backup_scope_tracks_the_real_storage_directory ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+

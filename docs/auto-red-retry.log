@@ -1,0 +1,51 @@
+✔ automatic backup is opt-in, verifies once and skips unchanged data (6.6752ms)
+✔ switching accounts revokes prior consent even when returning to a previously enabled account (1.024ms)
+✔ disabling during an upload cancels it and ignores late success (0.8053ms)
+✖ network failures use increasing retries and retain unsaved status until verified (1.1166ms)
+✖ permission denial pauses automatic attempts until explicit re-enable (0.8821ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 3
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 63.1625
+
+✖ failing tests:
+
+test at tests\auto-backup.test.cjs:31:1
+✖ network failures use increasing retries and retain unsaved status until verified (1.1166ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'error'
+  - 'retrying'
+  
+      at TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\auto-backup.test.cjs:33:125)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'error',
+    expected: 'retrying',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\auto-backup.test.cjs:37:1
+✖ permission denial pauses automatic attempts until explicit re-enable (0.8821ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\auto-backup.test.cjs:40:9)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

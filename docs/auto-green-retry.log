@@ -1,0 +1,13 @@
+✔ automatic backup is opt-in, verifies once and skips unchanged data (6.2305ms)
+✔ switching accounts revokes prior consent even when returning to a previously enabled account (0.7757ms)
+✔ disabling during an upload cancels it and ignores late success (0.7318ms)
+✔ network failures use increasing retries and retain unsaved status until verified (0.8112ms)
+✔ permission denial pauses automatic attempts until explicit re-enable (0.5325ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 63.2261

@@ -1,0 +1,45 @@
+{
+  "verified_at": "2026-10-21T19:13:10.821Z",
+  "email": "arafat.sofa.point@gmail.com",
+  "owner": "f0ac0538-35cb-45c9-a9c0-089372abaaf3",
+  "counts": {
+    "personas": 1,
+    "chats": 13,
+    "frameworks": 35,
+    "anecdotes": 23,
+    "files": 83,
+    "knowledgeFiles": 63,
+    "sessionFiles": 6
+  },
+  "digest": "418490a7a2640d434484306074c415ae3645a3f74e21a9c9643415e86cb8fe6d",
+  "cloud_rows": {
+    "cloud_personas": 4,
+    "knowledge_cards": 58,
+    "chat_conversations": 13
+  },
+  "idempotent": true,
+  "cloud_only_recovery_path": "C:\\Users\\AR-Qamzawi\\AppData\\Local\\PersonasHub\\cloud-recovery\\recovered-42c3922ae9d6402817e7e443b3b40a92",
+  "recovered_files": 83,
+  "recovered_hashes_equal": true,
+  "current_user_cannot_read_other_known_users_private_rows": {
+    "cloud_personas": {
+      "status": 200,
+      "visible": 0
+    },
+    "knowledge_cards": {
+      "status": 200,
+      "visible": 0
+    },
+    "chat_conversations": {
+      "status": 200,
+      "visible": 0
+    }
+  },
+  "ui_controls_restored": true,
+  "limitations": [
+    "No second-machine test",
+    "No production cross-account write probes",
+    "Administrative schema/RLS metadata not accessible through the authenticated REST metadata endpoint",
+    "Manual backup and recovery only; no automatic multi-device reconciliation"
+  ]
+}

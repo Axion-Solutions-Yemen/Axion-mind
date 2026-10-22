@@ -1,0 +1,12 @@
+{
+  "id": "crit_thinking_partner_framework",
+  "title": "The CRIT Strategic Leverage Protocol",
+  "category": "Operations",
+  "rules": [
+    "Never use AI as an overpriced Google search; treat it as an adversarial thinking partner deployed on the single 20% problem that moves 80% of enterprise value.",
+    "Provide Context without filter: detail the company stage, runway, exact financial stakes, and raw operational roadblocks.",
+    "Assign a hyper-specialized Role: command the model to act as a world-class domain expert with cross-disciplinary edge (e.g., cross-border distressed debt restructuring banker), not a generic title.",
+    "Mandate the Interview: invert the prompt dynamics by requiring the model to ask 3 to 5 targeted diagnostic questions one at a time before generating solutions.",
+    "Dictate a ruthless Task: require non-trivial, non-obvious execution steps instead of surface-level bulleted summaries."
+  ]
+}

@@ -1,0 +1,448 @@
+✔ actual sync handler settles without the original delayed sb exception (2.6182ms)
+✔ snapshot plan covers distinct cards, supporting files, exact values, and underscored persona IDs (5.6598ms)
+✔ real HTTP fixture: complete backup verifies cards and immutable snapshot and survives cloud-only download (61.6296ms)
+✔ HTTP 400 cannot publish a complete backup or expose raw backend content (7.8278ms)
+✔ HTTP 401 cannot publish a complete backup or expose raw backend content (3.8346ms)
+✔ HTTP 403 cannot publish a complete backup or expose raw backend content (3.9598ms)
+✔ HTTP 409 cannot publish a complete backup or expose raw backend content (4.076ms)
+✔ HTTP 413 cannot publish a complete backup or expose raw backend content (4.0891ms)
+✔ HTTP 429 cannot publish a complete backup or expose raw backend content (4.4082ms)
+✔ HTTP 500 cannot publish a complete backup or expose raw backend content (3.5179ms)
+✔ pagination exhausts server pages even if server page cap is smaller than requested (12.017ms)
+✔ tampered cloud snapshot fails integrity validation (11.0517ms)
+✔ mid-operation account change stops writes and cannot claim complete (2.5956ms)
+✔ request timeout terminates the operation and releases the admission guard (23.0774ms)
+✔ cancellation during an HTTP request is terminal and leaves no complete backup (30.0343ms)
+✔ overlapping operations are rejected without queuing a second upload (12.6017ms)
+✔ local edits during upload prevent a latest-data success claim (8.9105ms)
+✔ unsafe, corrupt and Windows-alias snapshot paths are rejected before any HTTP write (0.3925ms)
+✔ controller restores controls and reports verified counts rather than a stuck timer (0.2868ms)
+✖ UI and native bindings expose verified backup and non-destructive cloud recovery without auto-sync promises (1.5215ms)
+✔ controller cloud recovery writes only the downloaded verified snapshot to a new native folder (0.1497ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 20
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 363.5696
+
+✖ failing tests:
+
+test at tests\cloud-sync.test.cjs:132:1
+✖ UI and native bindings expose verified backup and non-destructive cloud recovery without auto-sync promises (1.5215ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /<script src="cloud-sync.js"><\/script>/. Input:
+  
+  '<!DOCTYPE html>\r\n' +
+    '<html lang="en" data-theme="dark">\r\n' +
+    '<head>\r\n' +
+    '  <meta charset="UTF-8">\r\n' +
+    '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\r\n' +
+    '  <title>Axion Mind</title>\r\n' +
+    '  <link rel="icon" type="image/png" href="assets/app_logo.png">\r\n' +
+    '  <!-- Marked for Markdown & Highlight.js for code blocks -->\r\n' +
+    '  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>\r\n' +
+    '  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">\r\n' +
+    '  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>\r\n' +
+    '  <style>\r\n' +
+    '    /* AXION Design System 1.1 + Midnight v1.1.0 Dark Token Architecture */\r\n' +
+    '    :root, [data-theme="dark"] {\r\n' +
+    '      color-scheme: dark;\r\n' +
+    '      --ax-bg: #06070b;\r\n' +
+    '      --ax-surface: #0e111a;\r\n' +
+    '      --ax-surface-raised: #171b27;\r\n' +
+    '      --ax-surface-subtle: #131723;\r\n' +
+    '      --ax-text: #f4f5fa;\r\n' +
+    '      --ax-muted: #a4adc1;\r\n' +
+    '      --ax-border: #292e40;\r\n' +
+    '      --ax-control-border: #65718d;\r\n' +
+    '      --ax-primary: #a497ff;\r\n' +
+    '      --ax-primary-hover: #b8aeff;\r\n' +
+    '      --ax-primary-active: #cec6ff;\r\n' +
+    '      --ax-on-primary: #0b0817;\r\n' +
+    '      --ax-primary-subtle: #221b3b;\r\n' +
+    '      --ax-link: #b8aeff;\r\n' +
+    '      --ax-focus: #56e0c0;\r\n' +
+    '      --ax-success: #56e0c0;\r\n' +
+    '      --ax-success-subtle: #0d2924;\r\n' +
+    '      --ax-warning: #f2c879;\r\n' +
+    '      --ax-warning-subtle: #302514;\r\n' +
+    '      --ax-danger: #ff8fa7;\r\n' +
+    '      --ax-danger-hover: #ffadbf;\r\n' +
+    '      --ax-on-danger: #270b14;\r\n' +
+    '      --ax-danger-subtle: #331520;\r\n' +
+    '      --ax-info: #81b5ff;\r\n' +
+    '      --ax-info-subtle: #112644;\r\n' +
+    '      --ax-accent-violet: #a497ff;\r\n' +
+    '      --ax-accent-aqua: #56e0c0;\r\n' +
+    '      --ax-accent-blue: #729dff;\r\n' +
+    '      --ax-accent-rose: #f594bd;\r\n' +
+    '      --ax-shadow-sm: 0 1px 2px rgb(0 0 0 / 28%);\r\n' +
+    '      --ax-shadow-md: 0 6px 18px rgb(0 0 0 / 24%);\r\n' +
+    '      --ax-shadow-lg: 0 18px 48px rgb(0 0 0 / 32%);\r\n' +
+    '\r\n' +
+    '      /* Compatibility aliases */\r\n' +
+    '      --bg-darker: var(--ax-bg);\r\n' +
+    '      --bg-dark: #08090e;\r\n' +
+    '      --bg-card: var(--ax-surface);\r\n' +
+    '      --bg-hover: var(--ax-surface-subtle);\r\n' +
+    '      --border-color: var(--ax-border);\r\n' +
+    '      --border-subtle: rgba(255, 255, 255, 0.05);\r\n' +
+    '      --text-main: var(--ax-text);\r\n' +
+    '      --text-muted: var(--ax-muted);\r\n' +
+    '      --accent: var(--ax-primary);\r\n' +
+    '      --accent-hover: var(--ax-primary-hover);\r\n' +
+    '      --bubble-user: #171b27;\r\n' +
+    '      --bubble-assistant: transparent;\r\n' +
+    '      --success: var(--ax-success);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    * {\r\n' +
+    '      box-sizing: border-box;\r\n' +
+    '      margin: 0;\r\n' +
+    '      padding: 0;\r\n' +
+    '      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    /* Sleek minimal scrollbars */\r\n' +
+    '    ::-webkit-scrollbar {\r\n' +
+    '      width: 5px;\r\n' +
+    '      height: 5px;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    ::-webkit-scrollbar-track {\r\n' +
+    '      background: transparent;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    ::-webkit-scrollbar-thumb {\r\n' +
+    '      background: rgba(255, 255, 255, 0.08);\r\n' +
+    '      border-radius: 4px;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    ::-webkit-scrollbar-thumb:hover {\r\n' +
+    '      background: rgba(255, 255, 255, 0.16);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    body {\r\n' +
+    '      background-color: var(--bg-darker);\r\n' +
+    '      color: var(--text-main);\r\n' +
+    '      height: 100vh;\r\n' +
+    '      overflow: hidden;\r\n' +
+    '      display: flex;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    /* Layout */\r\n' +
+    '    #app {\r\n' +
+    '      display: flex;\r\n' +
+    '      width: 100vw;\r\n' +
+    '      height: 100vh;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    /* Sidebar */\r\n' +
+    '    .sidebar {\r\n' +
+    '      width: 280px;\r\n' +
+    '      min-width: 250px;\r\n' +
+    '      background: var(--bg-dark);\r\n' +
+    '      border-right: 1px solid var(--border-subtle);\r\n' +
+    '      display: flex;\r\n' +
+    '      flex-direction: column;\r\n' +
+    '      transition: all 0.2s ease;\r\n' +
+    '      z-index: 20;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .sidebar-header {\r\n' +
+    '      padding: 12px 16px;\r\n' +
+    '      border-bottom: 1px solid var(--border-subtle);\r\n' +
+    '      display: flex;\r\n' +
+    '      align-items: center;\r\n' +
+    '      justify-content: space-between;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .app-brand {\r\n' +
+    '      display: flex;\r\n' +
+    '      align-items: center;\r\n' +
+    '      gap: 8px;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .app-brand .logo {\r\n' +
+    '      font-size: 16px;\r\n' +
+    '      background: transparent;\r\n' +
+    '      padding: 0;\r\n' +
+    '      border-radius: 0;\r\n' +
+    '      display: flex;\r\n' +
+    '      align-items: center;\r\n' +
+    '      justify-content: center;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .app-brand h1 {\r\n' +
+    '      font-size: 13.5px;\r\n' +
+    '      font-weight: 600;\r\n' +
+    '      letter-spacing: -0.2px;\r\n' +
+    '      color: #f1f5f9;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .status-badge {\r\n' +
+    '      display: flex;\r\n' +
+    '      align-items: center;\r\n' +
+    '      gap: 5px;\r\n' +
+    '      font-size: 10.5px;\r\n' +
+    '      padding: 2px 8px;\r\n' +
+    '      border-radius: 9999px;\r\n' +
+    '      background: var(--ax-success-subtle);\r\n' +
+    '      color: var(--ax-success);\r\n' +
+    '      border: 1px solid rgb(86 224 192 / 24%);\r\n' +
+    '      font-weight: 500;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .status-badge.offline {\r\n' +
+    '      background: rgba(239, 68, 68, 0.15);\r\n' +
+    '      color: #ef4444;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .status-dot {\r\n' +
+    '      width: 6px;\r\n' +
+    '      height: 6px;\r\n' +
+    '      border-radius: 50%;\r\n' +
+    '      background: currentColor;\r\n' +
+    '      box-shadow: 0 0 8px currentColor;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .sidebar-search {\r\n' +
+    '      padding: 8px 12px;\r\n' +
+    '      display: flex;\r\n' +
+    '      gap: 6px;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .search-input {\r\n' +
+    '      flex: 1;\r\n' +
+    '      background: rgba(255, 255, 255, 0.03);\r\n' +
+    '      border: 1px solid var(--border-subtle);\r\n' +
+    '      border-radius: 6px;\r\n' +
+    '      padding: 6px 10px;\r\n' +
+    '      color: var(--text-main);\r\n' +
+    '      font-size: 12px;\r\n' +
+    '      outline: none;\r\n' +
+    '      transition: border 0.15s, background 0.15s;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .search-input:focus {\r\n' +
+    '      border-color: rgba(255, 255, 255, 0.2);\r\n' +
+    '      background: rgba(255, 255, 255, 0.05);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .btn-new-persona {\r\n' +
+    '      background: var(--ax-surface-raised);\r\n' +
+    '      color: var(--ax-text);\r\n' +
+    '      border: 1px solid var(--ax-control-border);\r\n' +
+    '      border-radius: 6px;\r\n' +
+    '      padding: 6px 12px;\r\n' +
+    '      font-size: 13px;\r\n' +
+    '      font-weight: 500;\r\n' +
+    '      cursor: pointer;\r\n' +
+    '      display: flex;\r\n' +
+    '      align-items: center;\r\n' +
+    '      justify-content: center;\r\n' +
+    '      transition: background var(--ax-duration-fast, 120ms), border-color var(--ax-duration-fast, 120ms);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .btn-new-persona:hover {\r\n' +
+    '      background: var(--ax-surface-subtle);\r\n' +
+    '      border-color: var(--ax-primary);\r\n' +
+    '      color: var(--ax-primary);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .btn-new-persona:active {\r\n' +
+    '      transform: scale(0.98);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .personas-list {\r\n' +
+    '      flex: 1;\r\n' +
+    '      overflow-y: auto;\r\n' +
+    '      padding: 8px;\r\n' +
+    '      display: flex;\r\n' +
+    '      flex-direction: column;\r\n' +
+    '      gap: 4px;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .persona-item {\r\n' +
+    '      display: flex;\r\n' +
+    '      align-items: center;\r\n' +
+    '      padding: 6px 10px;\r\n' +
+    '      border-radius: 6px;\r\n' +
+    '      cursor: pointer;\r\n' +
+    '      gap: 8px;\r\n' +
+    '      transition: background 0.12s;\r\n' +
+    '      border: 1px solid transparent;\r\n' +
+    '      user-select: none;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .persona-item:hover {\r\n' +
+    '      background: rgba(255, 255, 255, 0.03);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .persona-item.active {\r\n' +
+    '      background: rgba(255, 255, 255, 0.06);\r\n' +
+    '      border-color: rgba(255, 255, 255, 0.1);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .persona-avatar {\r\n' +
+    '      font-size: 16px;\r\n' +
+    '      width: 28px;\r\n' +
+    '      height: 28px;\r\n' +
+    '      border-radius: 6px;\r\n' +
+    '      background: rgba(255, 255, 255, 0.04);\r\n' +
+    '      display: flex;\r\n' +
+    '      align-items: center;\r\n' +
+    '      justify-content: center;\r\n' +
+    '      flex-shrink: 0;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .persona-info {\r\n' +
+    '      flex: 1;\r\n' +
+    '      overflow: hidden;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .persona-name {\r\n' +
+    '      font-size: 13px;\r\n' +
+    '      font-weight: 500;\r\n' +
+    '      white-space: nowrap;\r\n' +
+    '      overflow: hidden;\r\n' +
+    '      text-overflow: ellipsis;\r\n' +
+    '      color: var(--text-main);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .persona-title {\r\n' +
+    '      font-size: 11px;\r\n' +
+    '      color: var(--text-muted);\r\n' +
+    '      white-space: nowrap;\r\n' +
+    '      overflow: hidden;\r\n' +
+    '      text-overflow: ellipsis;\r\n' +
+    '      margin-top: 1px;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    /* Unified Sidebar Section Headers */\r\n' +
+    '    .sidebar-section-title {\r\n' +
+    '      padding: 10px 14px 4px 14px;\r\n' +
+    '      font-size: 11px;\r\n' +
+    '      font-weight: 700;\r\n' +
+    '      text-transform: uppercase;\r\n' +
+    '      letter-spacing: 0.8px;\r\n' +
+    '      color: var(--text-muted);\r\n' +
+    '      display: flex;\r\n' +
+    '      align-items: center;\r\n' +
+    '      justify-content: space-between;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .sidebar-section-title span.count-badge {\r\n' +
+    '      background: rgba(255, 255, 255, 0.08);\r\n' +
+    '      padding: 2px 6px;\r\n' +
+    '      border-radius: 8px;\r\n' +
+    '      font-size: 10px;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    /* Agent Card Accordion (Clean Minimalist List) */\r\n' +
+    '    .agent-card {\r\n' +
+    '      background: transparent;\r\n' +
+    '      border: 1px solid transparent;\r\n' +
+    '      border-radius: 8px;\r\n' +
+    '      margin-bottom: 2px;\r\n' +
+    '      overflow: hidden;\r\n' +
+    '      transition: background 0.15s, border-color 0.15s;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .agent-card:hover {\r\n' +
+    '      background: rgba(255, 255, 255, 0.02);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .agent-card.active-agent {\r\n' +
+    '      background: rgba(255, 255, 255, 0.03);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .agent-card-header {\r\n' +
+    '      display: flex;\r\n' +
+    '      align-items: center;\r\n' +
+    '      padding: 7px 10px;\r\n' +
+    '      cursor: pointer;\r\n' +
+    '      user-select: none;\r\n' +
+    '      gap: 9px;\r\n' +
+    '      border-radius: 8px;\r\n' +
+    '      transition: background 0.15s;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .agent-card-header:hover {\r\n' +
+    '      background: rgba(255, 255, 255, 0.04);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .agent-avatar {\r\n' +
+    '      font-size: 15px;\r\n' +
+    '      width: 26px;\r\n' +
+    '      height: 26px;\r\n' +
+    '      border-radius: 6px;\r\n' +
+    '      background: rgba(255, 255, 255, 0.04);\r\n' +
+    '      display: flex;\r\n' +
+    '      align-items: center;\r\n' +
+    '      justify-content: center;\r\n' +
+    '      flex-shrink: 0;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .agent-info {\r\n' +
+    '      flex: 1;\r\n' +
+    '      overflow: hidden;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .agent-name-row {\r\n' +
+    '      display: flex;\r\n' +
+    '      align-items: center;\r\n' +
+    '      justify-content: space-between;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .agent-name {\r\n' +
+    '      font-size: 12.5px;\r\n' +
+    '      font-weight: 500;\r\n' +
+    '      color: var(--text-main);\r\n' +
+    '      white-space: nowrap;\r\n' +
+    '      overflow: hidden;\r\n' +
+    '      text-overflow: ellipsis;\r\n' +
+    '      letter-spacing: -0.1px;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .agent-sessions-count {\r\n' +
+    '      font-size: 9.5px;\r\n' +
+    '      font-weight: 500;\r\n' +
+    '      padding: 0 5px;\r\n' +
+    '      border-radius: 6px;\r\n' +
+    '      background: rgba(255, 255, 255, 0.05);\r\n' +
+    '      color: var(--text-muted);\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .agent-title {\r\n' +
+    '      font-size: 10.5px;\r\n' +
+    '      color: var(--text-muted);\r\n' +
+    '      white-space: nowrap;\r\n' +
+    '      overflow: hidden;\r\n' +
+    '      text-overflow: ellipsis;\r\n' +
+    '      margin-top: 1px;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    '    .agent-toggle {\r\n' +
+    '      font-size: 9px;\r\n' +
+    '      color: #475569;\r\n' +
+    '      transition: transform 0.15s ease;\r\n' +
+    '      margin-left: 2px;\r'... 159404 more characters
+  
+      at TestContext.<anonymous> (D:\Side-Projects\StartUp\personas_hub_tauri\tests\cloud-sync.test.cjs:134:9)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '<!DOCTYPE html>\r\n<html lang="en" data-theme="dark">\r\n<head>\r\n  <meta charset="UTF-8">\r\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\r\n  <title>Axion Mind</title>\r\n  <link rel="icon" type="image/png" href="assets/app_logo.png">\r\n  <!-- Marked for Markdown & Highlight.js for code blocks -->\r\n  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>\r\n  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">\r\n  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>\r\n  <style>\r\n    /* AXION Design System 1.1 + Midnight v1.1.0 Dark Token Architecture */\r\n    :root, [data-theme="dark"] {\r\n      color-scheme: dark;\r\n      --ax-bg: #06070b;\r\n      --ax-surface: #0e111a;\r\n      --ax-surface-raised: #171b27;\r\n      --ax-surface-subtle: #131723;\r\n      --ax-text: #f4f5fa;\r\n      --ax-muted: #a4adc1;\r\n      --ax-border: #292e40;\r\n      --ax-control-border: #65718d;\r\n      --ax-primary: #a497ff;\r\n      --ax-primary-hover: #b8aeff;\r\n      --ax-primary-active: #cec6ff;\r\n      --ax-on-primary: #0b0817;\r\n      --ax-primary-subtle: #221b3b;\r\n      --ax-link: #b8aeff;\r\n      --ax-focus: #56e0c0;\r\n      --ax-success: #56e0c0;\r\n      --ax-success-subtle: #0d2924;\r\n      --ax-warning: #f2c879;\r\n      --ax-warning-subtle: #302514;\r\n      --ax-danger: #ff8fa7;\r\n      --ax-danger-hover: #ffadbf;\r\n      --ax-on-danger: #270b14;\r\n      --ax-danger-subtle: #331520;\r\n      --ax-info: #81b5ff;\r\n      --ax-info-subtle: #112644;\r\n      --ax-accent-violet: #a497ff;\r\n      --ax-accent-aqua: #56e0c0;\r\n      --ax-accent-blue: #729dff;\r\n      --ax-accent-rose: #f594bd;\r\n      --ax-shadow-sm: 0 1px 2px rgb(0 0 0 / 28%);\r\n      --ax-shadow-md: 0 6px 18px rgb(0 0 0 / 24%);\r\n      --ax-shadow-lg: 0 18px 48px rgb(0 0 0 / 32%);\r\n\r\n      /* Compatibility aliases */\r\n      --bg-darker: var(--ax-bg);\r\n      --bg-dark: #08090e;\r\n      --bg-card: var(--ax-surface);\r\n      --bg-hover: var(--ax-surface-subtle);\r\n      --border-color: var(--ax-border);\r\n      --border-subtle: rgba(255, 255, 255, 0.05);\r\n      --text-main: var(--ax-text);\r\n      --text-muted: var(--ax-muted);\r\n      --accent: var(--ax-primary);\r\n      --accent-hover: var(--ax-primary-hover);\r\n      --bubble-user: #171b27;\r\n      --bubble-assistant: transparent;\r\n      --success: var(--ax-success);\r\n    }\r\n\r\n    * {\r\n      box-sizing: border-box;\r\n      margin: 0;\r\n      padding: 0;\r\n      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;\r\n    }\r\n\r\n    /* Sleek minimal scrollbars */\r\n    ::-webkit-scrollbar {\r\n      width: 5px;\r\n      height: 5px;\r\n    }\r\n\r\n    ::-webkit-scrollbar-track {\r\n      background: transparent;\r\n    }\r\n\r\n    ::-webkit-scrollbar-thumb {\r\n      background: rgba(255, 255, 255, 0.08);\r\n      border-radius: 4px;\r\n    }\r\n\r\n    ::-webkit-scrollbar-thumb:hover {\r\n      background: rgba(255, 255, 255, 0.16);\r\n    }\r\n\r\n    body {\r\n      background-color: var(--bg-darker);\r\n      color: var(--text-main);\r\n      height: 100vh;\r\n      overflow: hidden;\r\n      display: flex;\r\n    }\r\n\r\n    /* Layout */\r\n    #app {\r\n      display: flex;\r\n      width: 100vw;\r\n      height: 100vh;\r\n    }\r\n\r\n    /* Sidebar */\r\n    .sidebar {\r\n      width: 280px;\r\n      min-width: 250px;\r\n      background: var(--bg-dark);\r\n      border-right: 1px solid var(--border-subtle);\r\n      display: flex;\r\n      flex-direction: column;\r\n      transition: all 0.2s ease;\r\n      z-index: 20;\r\n    }\r\n\r\n    .sidebar-header {\r\n      padding: 12px 16px;\r\n      border-bottom: 1px solid var(--border-subtle);\r\n      display: flex;\r\n      align-items: center;\r\n      justify-content: space-between;\r\n    }\r\n\r\n    .app-brand {\r\n      display: flex;\r\n      align-items: center;\r\n      gap: 8px;\r\n    }\r\n\r\n    .app-brand .logo {\r\n      font-size: 16px;\r\n      background: transparent;\r\n      padding: 0;\r\n      border-radius: 0;\r\n      display: flex;\r\n      align-items: center;\r\n      justify-content: center;\r\n    }\r\n\r\n    .app-brand h1 {\r\n      font-size: 13.5px;\r\n      font-weight: 600;\r\n      letter-spacing: -0.2px;\r\n      color: #f1f5f9;\r\n    }\r\n\r\n    .status-badge {\r\n      display: flex;\r\n      align-items: center;\r\n      gap: 5px;\r\n      font-size: 10.5px;\r\n      padding: 2px 8px;\r\n      border-radius: 9999px;\r\n      background: var(--ax-success-subtle);\r\n      color: var(--ax-success);\r\n      border: 1px solid rgb(86 224 192 / 24%);\r\n      font-weight: 500;\r\n    }\r\n\r\n    .status-badge.offline {\r\n      background: rgba(239, 68, 68, 0.15);\r\n      color: #ef4444;\r\n    }\r\n\r\n    .status-dot {\r\n      width: 6px;\r\n      height: 6px;\r\n      border-radius: 50%;\r\n      background: currentColor;\r\n      box-shadow: 0 0 8px currentColor;\r\n    }\r\n\r\n    .sidebar-search {\r\n      padding: 8px 12px;\r\n      display: flex;\r\n      gap: 6px;\r\n    }\r\n\r\n    .search-input {\r\n      flex: 1;\r\n      background: rgba(255, 255, 255, 0.03);\r\n      border: 1px solid var(--border-subtle);\r\n      border-radius: 6px;\r\n      padding: 6px 10px;\r\n      color: var(--text-main);\r\n      font-size: 12px;\r\n      outline: none;\r\n      transition: border 0.15s, background 0.15s;\r\n    }\r\n\r\n    .search-input:focus {\r\n      border-color: rgba(255, 255, 255, 0.2);\r\n      background: rgba(255, 255, 255, 0.05);\r\n    }\r\n\r\n    .btn-new-persona {\r\n      background: var(--ax-surface-raised);\r\n      color: var(--ax-text);\r\n      border: 1px solid var(--ax-control-border);\r\n      border-radius: 6px;\r\n      padding: 6px 12px;\r\n      font-size: 13px;\r\n      font-weight: 500;\r\n      cursor: pointer;\r\n      display: flex;\r\n      align-items: center;\r\n      justify-content: center;\r\n      transition: background var(--ax-duration-fast, 120ms), border-color var(--ax-duration-fast, 120ms);\r\n    }\r\n\r\n    .btn-new-persona:hover {\r\n      background: var(--ax-surface-subtle);\r\n      border-color: var(--ax-primary);\r\n      color: var(--ax-primary);\r\n    }\r\n\r\n    .btn-new-persona:active {\r\n      transform: scale(0.98);\r\n    }\r\n\r\n    .personas-list {\r\n      flex: 1;\r\n      overflow-y: auto;\r\n      padding: 8px;\r\n      display: flex;\r\n      flex-direction: column;\r\n      gap: 4px;\r\n    }\r\n\r\n    .persona-item {\r\n      display: flex;\r\n      align-items: center;\r\n      padding: 6px 10px;\r\n      border-radius: 6px;\r\n      cursor: pointer;\r\n      gap: 8px;\r\n      transition: background 0.12s;\r\n      border: 1px solid transparent;\r\n      user-select: none;\r\n    }\r\n\r\n    .persona-item:hover {\r\n      background: rgba(255, 255, 255, 0.03);\r\n    }\r\n\r\n    .persona-item.active {\r\n      background: rgba(255, 255, 255, 0.06);\r\n      border-color: rgba(255, 255, 255, 0.1);\r\n    }\r\n\r\n    .persona-avatar {\r\n      font-size: 16px;\r\n      width: 28px;\r\n      height: 28px;\r\n      border-radius: 6px;\r\n      background: rgba(255, 255, 255, 0.04);\r\n      display: flex;\r\n      align-items: center;\r\n      justify-content: center;\r\n      flex-shrink: 0;\r\n    }\r\n\r\n    .persona-info {\r\n      flex: 1;\r\n      overflow: hidden;\r\n    }\r\n\r\n    .persona-name {\r\n      font-size: 13px;\r\n      font-weight: 500;\r\n      white-space: nowrap;\r\n      overflow: hidden;\r\n      text-overflow: ellipsis;\r\n      color: var(--text-main);\r\n    }\r\n\r\n    .persona-title {\r\n      font-size: 11px;\r\n      color: var(--text-muted);\r\n      white-space: nowrap;\r\n      overflow: hidden;\r\n      text-overflow: ellipsis;\r\n      margin-top: 1px;\r\n    }\r\n\r\n    /* Unified Sidebar Section Headers */\r\n    .sidebar-section-title {\r\n      padding: 10px 14px 4px 14px;\r\n      font-size: 11px;\r\n      font-weight: 700;\r\n      text-transform: uppercase;\r\n      letter-spacing: 0.8px;\r\n      color: var(--text-muted);\r\n      display: flex;\r\n      align-items: center;\r\n      justify-content: space-between;\r\n    }\r\n\r\n    .sidebar-section-title span.count-badge {\r\n      background: rgba(255, 255, 255, 0.08);\r\n      padding: 2px 6px;\r\n      border-radius: 8px;\r\n      font-size: 10px;\r\n    }\r\n\r\n    /* Agent Card Accordion (Clean Minimalist List) */\r\n    .agent-card {\r\n      background: transparent;\r\n      border: 1px solid transparent;\r\n      border-radius: 8px;\r\n      margin-bottom: 2px;\r\n      overflow: hidden;\r\n      transition: background 0.15s, border-color 0.15s;\r\n    }\r\n\r\n    .agent-card:hover {\r\n      background: rgba(255, 255, 255, 0.02);\r\n    }\r\n\r\n    .agent-card.active-agent {\r\n      background: rgba(255, 255, 255, 0.03);\r\n    }\r\n\r\n    .agent-card-header {\r\n      display: flex;\r\n      align-items: center;\r\n      padding: 7px 10px;\r\n      cursor: pointer;\r\n      user-select: none;\r\n      gap: 9px;\r\n      border-radius: 8px;\r\n      transition: background 0.15s;\r\n    }\r\n\r\n    .agent-card-header:hover {\r\n      background: rgba(255, 255, 255, 0.04);\r\n    }\r\n\r\n    .agent-avatar {\r\n      font-size: 15px;\r\n      width: 26px;\r\n      height: 26px;\r\n      border-radius: 6px;\r\n      background: rgba(255, 255, 255, 0.04);\r\n      display: flex;\r\n      align-items: center;\r\n      justify-content: center;\r\n      flex-shrink: 0;\r\n    }\r\n\r\n    .agent-info {\r\n      flex: 1;\r\n      overflow: hidden;\r\n    }\r\n\r\n    .agent-name-row {\r\n      display: flex;\r\n      align-items: center;\r\n      justify-content: space-between;\r\n    }\r\n\r\n    .agent-name {\r\n      font-size: 12.5px;\r\n      font-weight: 500;\r\n      color: var(--text-main);\r\n      white-space: nowrap;\r\n      overflow: hidden;\r\n      text-overflow: ellipsis;\r\n      letter-spacing: -0.1px;\r\n    }\r\n\r\n    .agent-sessions-count {\r\n      font-size: 9.5px;\r\n      font-weight: 500;\r\n      padding: 0 5px;\r\n      border-radius: 6px;\r\n      background: rgba(255, 255, 255, 0.05);\r\n      color: var(--text-muted);\r\n    }\r\n\r\n    .agent-title {\r\n      font-size: 10.5px;\r\n      color: var(--text-muted);\r\n      white-space: nowrap;\r\n      overflow: hidden;\r\n      text-overflow: ellipsis;\r\n      margin-top: 1px;\r\n    }\r\n\r\n    .agent-toggle {\r\n      font-size: 9px;\r\n      color: #475569;\r\n      transition: transform 0.15s ease;\r\n      margin-left: 2px;\r'... 159404 more characters,
+    expected: /<script src="cloud-sync.js"><\/script>/,
+    operator: 'match',
+    diff: 'simple'
+  }
