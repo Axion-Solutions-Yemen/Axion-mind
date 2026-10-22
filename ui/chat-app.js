@@ -49,6 +49,9 @@
     let activeId = 'alex-hormozi_original';
     let activeAgentId = 'alex-hormozi'; // default agent
     let expandedAgents = new Set(['hermes', 'alex-hormozi', 'tech-architect', 'marketing-explorer', 'research-analyst']); // Expanded by default so sessions are always visible
+    let expandedSessionsAgents = new Set();
+    let activeSidebarTab = 'personas';
+    let showAdvancedModels = false;
     let isStreaming = false;
     let abortController = null;
     let activeStreamController = null;
@@ -218,7 +221,7 @@
       // Define default Hermes agent representing native CLI/Telegram/Mind sessions
       const hermesAgent = {
         id: 'hermes',
-        name: 'Hermes (Default Mind)',
+        name: 'Hermes (System Mind)',
         title: 'Autonomous System Agent & CLI/Telegram Engine',
         avatar: '⚡',
         emoji: '⚡',
@@ -227,13 +230,20 @@
         isDefaultHermes: true,
       };
 
-      // Full list of agents
-      const allAgents = [hermesAgent, ...personas];
+      // Tab segmentation: In search mode, search both. Otherwise, show current tab
+      let allAgents = [];
+      if (filter.length > 0) {
+        allAgents = [hermesAgent, ...personas];
+      } else if (activeSidebarTab === 'hermes') {
+        allAgents = [hermesAgent];
+      } else {
+        allAgents = personas;
+      }
 
       // Section title
       const header = document.createElement('div');
       header.className = 'sidebar-section-title';
-      header.innerHTML = `<span>Agents</span><span class="count-badge">${allAgents.length}</span>`;
+      header.innerHTML = `<span>${activeSidebarTab === 'hermes' ? 'System Engine' : 'Personas'}</span><span class="count-badge">${allAgents.length}</span>`;
       personasListEl.appendChild(header);
 
       allAgents.forEach(agent => {
@@ -318,7 +328,12 @@
         };
         sessContainer.appendChild(newChatBtn);
 
-        filteredSessions.forEach(s => {
+        // Session Capping: Render 5 by default with clean accordion
+        const MAX_INITIAL = 5;
+        const isShowAll = expandedSessionsAgents.has(agent.id) || filter.length > 0;
+        const visibleSessions = isShowAll ? filteredSessions : filteredSessions.slice(0, MAX_INITIAL);
+
+        visibleSessions.forEach(s => {
           const isItemActive = isHermes ? (activeMode === 'session' && activeId === s.id) : (activeMode === 'persona' && activeId === s.id);
           const item = document.createElement('div');
           item.className = `sub-session-item ${isItemActive ? 'active' : ''}`;
@@ -347,6 +362,25 @@
           `;
           sessContainer.appendChild(item);
         });
+
+        if (filteredSessions.length > MAX_INITIAL && filter.length === 0) {
+          const toggleBtn = document.createElement('div');
+          toggleBtn.className = 'btn-show-more-sessions';
+          toggleBtn.style.cssText = 'padding: 6px 12px; font-size: 11px; color: var(--ax-primary); cursor: pointer; text-align: center; border-radius: 6px; margin: 4px 10px 8px; background: rgba(99, 102, 241, 0.08); transition: background 0.15s; font-weight: 500;';
+          toggleBtn.textContent = isShowAll 
+            ? '▲ Show fewer sessions' 
+            : `▼ ${filteredSessions.length - MAX_INITIAL} earlier sessions...`;
+          toggleBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (expandedSessionsAgents.has(agent.id)) {
+              expandedSessionsAgents.delete(agent.id);
+            } else {
+              expandedSessionsAgents.add(agent.id);
+            }
+            renderUnifiedSidebar();
+          };
+          sessContainer.appendChild(toggleBtn);
+        }
 
         card.appendChild(sessContainer);
         personasListEl.appendChild(card);
@@ -914,6 +948,12 @@
           a.classList.add('open');
         }
       });
+      const chipLabel = document.getElementById('thinkingChipLabel');
+      if (chipLabel) {
+        chipLabel.textContent = anyOpen ? 'Thinking: Hidden' : 'Thinking: Open';
+      }
+      btnToggleAllThinkingEl.style.borderColor = anyOpen ? 'var(--ax-border)' : 'var(--ax-primary)';
+      btnToggleAllThinkingEl.style.color = anyOpen ? 'var(--ax-text-muted)' : 'var(--ax-primary)';
     };
 
     btnEditPersonaEl.onclick = () => {
@@ -1140,58 +1180,163 @@
         const models = await invoke('get_connected_hermes_models');
         if (!models || models.length === 0) return;
 
-        const groups = {};
-        models.forEach(m => {
-          const prov = m.provider || 'Connected Models';
-          if (!groups[prov]) groups[prov] = [];
-          groups[prov].push(m);
-        });
-
         chatModelDropdownMenu.innerHTML = '';
 
-        for (const [providerName, items] of Object.entries(groups)) {
-          const groupHeader = document.createElement('div');
-          groupHeader.style.cssText = 'font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ax-text-muted); padding: 8px 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 4px;';
-          groupHeader.textContent = providerName;
-          chatModelDropdownMenu.appendChild(groupHeader);
+        // Determine best model for each human-friendly tier
+        const fastModel = models.find(m => m.id.includes('gemini-3.8-flash')) 
+          || models.find(m => m.id.includes('gemini-3.7-flash')) 
+          || models.find(m => m.id.includes('flash')) 
+          || models[0];
 
-          items.forEach(m => {
-            const item = document.createElement('div');
-            item.className = 'chat-model-menu-item';
-            item.setAttribute('data-model', m.id);
-            item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 6px; cursor: pointer; transition: background 0.15s; font-size: 12px; color: var(--ax-text);';
-            
-            const isSelected = m.id === currentChatModel;
-            if (isSelected) {
-              item.style.background = 'rgba(99, 102, 241, 0.2)';
-            }
+        const reasoningModel = models.find(m => m.id.includes('claude-sonnet') || m.id.includes('reasoner') || m.id.includes('claude-opus')) 
+          || models.find(m => m.id.includes('pro')) 
+          || fastModel;
 
-            item.innerHTML = `
-              <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
-                <span style="font-size: 14px;">${getModelIcon(m.id)}</span>
-                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${isSelected ? '600' : '400'};">${escapeHtml(m.name)}</span>
+        const creativeModel = models.find(m => m.id.includes('argon')) 
+          || models.find(m => m.id.includes('deepseek-v4') || m.id.includes('chat')) 
+          || fastModel;
+
+        const tiers = [
+          {
+            id: fastModel ? fastModel.id : 'antigravity-gemini-3.8-flash',
+            title: 'Fast & Smart',
+            desc: 'Gemini 3.8 Flash • Instant daily answers & brainstorming',
+            icon: '⚡'
+          },
+          {
+            id: reasoningModel ? reasoningModel.id : 'antigravity-claude-sonnet-4-6-thinking',
+            title: 'Deep Reasoning',
+            desc: 'Claude / DeepSeek • Architecture, code & complex logic',
+            icon: '🧠'
+          },
+          {
+            id: creativeModel ? creativeModel.id : 'gemini-4-argon',
+            title: 'Long-Form Creative',
+            desc: 'Gemini Argon • Deep writing, synthesis & offer creation',
+            icon: '✍️'
+          }
+        ];
+
+        // Header for Core Intelligence Tiers
+        const coreHeader = document.createElement('div');
+        coreHeader.style.cssText = 'font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ax-text-muted); padding: 6px 10px 4px;';
+        coreHeader.textContent = 'Intelligence Tier';
+        chatModelDropdownMenu.appendChild(coreHeader);
+
+        tiers.forEach(tier => {
+          const item = document.createElement('div');
+          item.className = 'chat-model-menu-item';
+          item.setAttribute('data-model', tier.id);
+          item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: all 0.15s; margin-bottom: 3px;';
+          
+          const isSelected = tier.id === currentChatModel;
+          if (isSelected) {
+            item.style.background = 'rgba(99, 102, 241, 0.18)';
+            item.style.border = '1px solid rgba(99, 102, 241, 0.35)';
+          } else {
+            item.style.border = '1px solid transparent';
+          }
+
+          item.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+              <span style="font-size: 16px;">${tier.icon}</span>
+              <div style="display: flex; flex-direction: column; min-width: 0;">
+                <span style="font-size: 12.5px; font-weight: 600; color: var(--ax-text);">${escapeHtml(tier.title)}</span>
+                <span style="font-size: 10px; color: var(--ax-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(tier.desc)}</span>
               </div>
-              <span class="model-check" style="color: #818cf8; font-weight: bold; font-size: 12px; opacity: ${isSelected ? '1' : '0'};">✓</span>
-            `;
+            </div>
+            <span class="model-check" style="color: #818cf8; font-weight: bold; font-size: 13px; opacity: ${isSelected ? '1' : '0'};">✓</span>
+          `;
 
-            item.onmouseenter = () => {
-              if (item.getAttribute('data-model') !== currentChatModel) {
-                item.style.background = 'rgba(255, 255, 255, 0.05)';
-              }
-            };
-            item.onmouseleave = () => {
-              if (item.getAttribute('data-model') !== currentChatModel) {
-                item.style.background = 'transparent';
-              }
-            };
+          item.onmouseenter = () => {
+            if (item.getAttribute('data-model') !== currentChatModel) {
+              item.style.background = 'rgba(255, 255, 255, 0.05)';
+            }
+          };
+          item.onmouseleave = () => {
+            if (item.getAttribute('data-model') !== currentChatModel) {
+              item.style.background = 'transparent';
+            }
+          };
 
-            item.onclick = (e) => {
-              e.stopPropagation();
-              setChatModel(m.id, m.name);
-            };
+          item.onclick = (e) => {
+            e.stopPropagation();
+            setChatModel(tier.id, `${tier.icon} ${tier.title}`);
+          };
 
-            chatModelDropdownMenu.appendChild(item);
+          chatModelDropdownMenu.appendChild(item);
+        });
+
+        // Advanced Models & Local Bridges Collapsible Section
+        const advToggle = document.createElement('div');
+        advToggle.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); cursor: pointer; color: var(--ax-text-muted); font-size: 11px; font-weight: 500; transition: color 0.15s;';
+        advToggle.innerHTML = `
+          <span>⚙️ All Local Bridges (${models.length})</span>
+          <span style="font-size: 9px;">${showAdvancedModels ? '▲ Hide' : '▼ Expand'}</span>
+        `;
+        advToggle.onclick = (e) => {
+          e.stopPropagation();
+          showAdvancedModels = !showAdvancedModels;
+          populateChatModelPicker();
+        };
+        chatModelDropdownMenu.appendChild(advToggle);
+
+        if (showAdvancedModels) {
+          const advContainer = document.createElement('div');
+          advContainer.style.cssText = 'padding-top: 4px;';
+
+          const groups = {};
+          models.forEach(m => {
+            const prov = m.provider || 'Other';
+            if (!groups[prov]) groups[prov] = [];
+            groups[prov].push(m);
           });
+
+          for (const [providerName, items] of Object.entries(groups)) {
+            const groupHeader = document.createElement('div');
+            groupHeader.style.cssText = 'font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ax-text-muted); padding: 6px 10px 2px;';
+            groupHeader.textContent = providerName;
+            advContainer.appendChild(groupHeader);
+
+            items.forEach(m => {
+              const item = document.createElement('div');
+              item.className = 'chat-model-menu-item';
+              item.setAttribute('data-model', m.id);
+              item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 5px 10px; border-radius: 6px; cursor: pointer; transition: background 0.15s; font-size: 11.5px; color: var(--ax-text);';
+              
+              const isSelected = m.id === currentChatModel;
+              if (isSelected) {
+                item.style.background = 'rgba(99, 102, 241, 0.2)';
+              }
+
+              item.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 7px; overflow: hidden;">
+                  <span style="font-size: 12px;">${getModelIcon(m.id)}</span>
+                  <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${isSelected ? '600' : '400'};">${escapeHtml(m.name)}</span>
+                </div>
+                <span class="model-check" style="color: #818cf8; font-weight: bold; font-size: 11px; opacity: ${isSelected ? '1' : '0'};">✓</span>
+              `;
+
+              item.onmouseenter = () => {
+                if (item.getAttribute('data-model') !== currentChatModel) {
+                  item.style.background = 'rgba(255, 255, 255, 0.05)';
+                }
+              };
+              item.onmouseleave = () => {
+                if (item.getAttribute('data-model') !== currentChatModel) {
+                  item.style.background = 'transparent';
+                }
+              };
+
+              item.onclick = (e) => {
+                e.stopPropagation();
+                setChatModel(m.id, m.name);
+              };
+
+              advContainer.appendChild(item);
+            });
+          }
+          chatModelDropdownMenu.appendChild(advContainer);
         }
       } catch (err) {
         console.error('Failed to populate chat model picker:', err);
@@ -2281,6 +2426,66 @@
       document.getElementById('btnToggleMobileSidebar').onclick = () => {
         document.getElementById('sidebar').classList.toggle('open');
       };
+
+      // 3-dot overflow menu
+      const btnChatOverflowMenu = document.getElementById('btnChatOverflowMenu');
+      const chatOverflowDropdown = document.getElementById('chatOverflowDropdown');
+      if (btnChatOverflowMenu && chatOverflowDropdown) {
+        btnChatOverflowMenu.onclick = (e) => {
+          e.stopPropagation();
+          const isOpen = chatOverflowDropdown.style.display === 'flex';
+          chatOverflowDropdown.style.display = isOpen ? 'none' : 'flex';
+        };
+
+        document.addEventListener('click', (e) => {
+          if (!chatOverflowDropdown.contains(e.target) && e.target !== btnChatOverflowMenu) {
+            chatOverflowDropdown.style.display = 'none';
+          }
+        });
+      }
+
+      if (btnEditPersonaEl && chatOverflowDropdown) {
+        btnEditPersonaEl.addEventListener('click', () => {
+          chatOverflowDropdown.style.display = 'none';
+        });
+      }
+
+      if (btnClearChatEl && chatOverflowDropdown) {
+        btnClearChatEl.addEventListener('click', () => {
+          chatOverflowDropdown.style.display = 'none';
+        });
+      }
+
+      // Sidebar Tab Switching
+      const tabPersonas = document.getElementById('tabPersonas');
+      const tabHermes = document.getElementById('tabHermes');
+      if (tabPersonas && tabHermes) {
+        tabPersonas.onclick = () => {
+          activeSidebarTab = 'personas';
+          tabPersonas.className = 'sidebar-tab-btn active';
+          tabHermes.className = 'sidebar-tab-btn';
+          tabPersonas.style.background = 'var(--ax-surface-raised)';
+          tabPersonas.style.borderColor = 'var(--ax-border)';
+          tabPersonas.style.color = 'var(--ax-primary)';
+          tabHermes.style.background = 'transparent';
+          tabHermes.style.borderColor = 'transparent';
+          tabHermes.style.color = 'var(--ax-text-muted)';
+          renderUnifiedSidebar();
+        };
+
+        tabHermes.onclick = () => {
+          activeSidebarTab = 'hermes';
+          tabHermes.className = 'sidebar-tab-btn active';
+          tabPersonas.className = 'sidebar-tab-btn';
+          tabHermes.style.background = 'var(--ax-surface-raised)';
+          tabHermes.style.borderColor = 'var(--ax-border)';
+          tabHermes.style.color = 'var(--ax-primary)';
+          tabPersonas.style.background = 'transparent';
+          tabPersonas.style.borderColor = 'transparent';
+          tabPersonas.style.color = 'var(--ax-text-muted)';
+          renderUnifiedSidebar();
+        };
+      }
     }
 
     window.addEventListener('beforeunload', event => { if (pendingChatSaves.size) { event.preventDefault(); event.returnValue = ''; } });

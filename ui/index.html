@@ -1285,6 +1285,12 @@
         <button class="btn-new-persona" id="btnOpenNewPersonaModal" title="Create New Agent">+</button>
       </div>
 
+      <!-- Clean Tab Switcher: Personas vs System Logs -->
+      <div class="sidebar-tabs" style="display: flex; gap: 4px; padding: 0 14px 10px; border-bottom: 1px solid var(--ax-border); margin-bottom: 8px;">
+        <button type="button" id="tabPersonas" class="sidebar-tab-btn active" style="flex: 1; padding: 6px 8px; font-size: 11px; font-weight: 600; background: var(--ax-surface-raised); border: 1px solid var(--ax-border); border-radius: 6px; color: var(--ax-primary); cursor: pointer; transition: all 0.2s;">💬 Personas</button>
+        <button type="button" id="tabHermes" class="sidebar-tab-btn" style="flex: 1; padding: 6px 8px; font-size: 11px; font-weight: 600; background: transparent; border: 1px solid transparent; border-radius: 6px; color: var(--ax-text-muted); cursor: pointer; transition: all 0.2s;">⚡ System</button>
+      </div>
+
       <div class="personas-list" id="personasList">
         <!-- Injected via JS -->
       </div>
@@ -1296,6 +1302,7 @@
           <div style="min-width:0;"><span id="accountUserEmail" style="display:block;font-weight:500;color:var(--ax-text);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Local / Sign In</span><span id="sidebarBackupStatus" role="status" aria-live="polite" style="display:block;font-size:10px;color:var(--ax-text-muted);margin-top:3px;">Local only</span></div>
         </div>
         <div style="display: flex; gap: 6px;">
+          <button id="btnHermesControl" style="background: none; border: 1px solid var(--ax-border); border-radius: 6px; color: var(--ax-primary); cursor: pointer; font-size: 12px; padding: 4px 6px; transition: all 0.2s;" title="Hermes Mind Control Center">⚡</button>
           <button id="btnOpenDiagnostics" style="background: none; border: 1px solid var(--ax-border); border-radius: 6px; color: var(--ax-text-muted); cursor: pointer; font-size: 12px; padding: 4px 6px; transition: all 0.2s;" title="System Diagnostics & Deep Logs">🩺</button>
           <button id="btnOpenAuthModal" style="background: none; border: 1px solid var(--ax-border); border-radius: 6px; color: var(--ax-text-muted); cursor: pointer; font-size: 12px; padding: 4px 6px; transition: all 0.2s;" title="Cloud Account & Real-Time Sync">☁️</button>
           <button id="btnOpenSettings" style="background: none; border: 1px solid var(--ax-border); border-radius: 6px; color: var(--ax-text-muted); cursor: pointer; font-size: 13px; padding: 4px 6px; transition: all 0.2s;" title="AI Connection Settings">⚙️</button>
@@ -1315,11 +1322,22 @@
           </div>
         </div>
 
-        <div class="header-actions">
-          <button class="btn-action" id="btnHermesControl" style="color: var(--ax-primary); border-color: rgb(164 151 255 / 30%);" title="Open Hermes Mind Control Center">⚡ Hermes Control</button>
-          <button class="btn-action" id="btnToggleAllThinking" title="Toggle all thinking blocks in this conversation">🧠 Toggle Thinking</button>
-          <button class="btn-action" id="btnEditPersona">⚙️ Edit Persona</button>
-          <button class="btn-action" id="btnClearChat">🗑️ Clear Chat</button>
+        <div class="header-actions" style="display: flex; align-items: center; gap: 8px;">
+          <button class="btn-action" id="btnToggleAllThinking" title="Toggle reasoning/thinking visibility" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">
+            <span>🧠</span>
+            <span id="thinkingChipLabel">Thinking</span>
+          </button>
+          <div class="overflow-menu-container" style="position: relative;">
+            <button class="btn-action" id="btnChatOverflowMenu" title="More options" style="padding: 5px 10px; font-size: 14px; font-weight: bold; border-radius: 6px; line-height: 1; cursor: pointer;">⋮</button>
+            <div class="overflow-dropdown-menu" id="chatOverflowDropdown" style="display: none; position: absolute; top: calc(100% + 6px); right: 0; width: 170px; background: #0c121e; border: 1px solid var(--ax-border); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); z-index: 1000; padding: 4px; flex-direction: column; gap: 2px;">
+              <button class="overflow-item" id="btnEditPersona" style="display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 7px 10px; background: none; border: none; color: var(--ax-text); font-size: 12px; border-radius: 6px; cursor: pointer; transition: background 0.15s;">
+                <span>⚙️</span> Edit Persona
+              </button>
+              <button class="overflow-item" id="btnClearChat" style="display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 7px 10px; background: none; border: none; color: #ef4444; font-size: 12px; border-radius: 6px; cursor: pointer; transition: background 0.15s;">
+                <span>🗑️</span> Clear Chat
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -1328,25 +1346,19 @@
       </div>
 
       <div class="chat-input-wrapper">
-        <!-- ChatGPT-style Model Picker Bar -->
+        <!-- Minimalist Model Picker Bar -->
         <div class="chat-input-toolbar" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 4px;">
           <div style="display: flex; align-items: center; gap: 8px; position: relative;">
             <button type="button" id="btnChatModelPicker" style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--ax-border); border-radius: 18px; padding: 4px 12px; font-size: 12px; font-weight: 500; color: var(--ax-text); cursor: pointer; transition: all 0.2s;">
-              <span id="chatModelPickerIcon" style="font-size: 13px;">🧠</span>
-              <span id="chatModelPickerLabel" style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">antigravity-gemini-3.8-flash</span>
+              <span id="chatModelPickerIcon" style="font-size: 13px;">⚡</span>
+              <span id="chatModelPickerLabel" style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">⚡ Fast & Smart</span>
               <span style="font-size: 9px; opacity: 0.6; margin-left: 2px;">▼</span>
             </button>
 
-            <!-- Floating ChatGPT-style Model Dropdown Menu -->
-            <div id="chatModelDropdownMenu" style="display: none; position: absolute; bottom: calc(100% + 8px); left: 0; width: 320px; max-height: 380px; overflow-y: auto; background: #0c121e; border: 1px solid var(--ax-border); border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,0.7); z-index: 1000; padding: 6px;">
+            <!-- Floating Clean Model Dropdown Menu -->
+            <div id="chatModelDropdownMenu" style="display: none; position: absolute; bottom: calc(100% + 8px); left: 0; width: 330px; max-height: 420px; overflow-y: auto; background: #0c121e; border: 1px solid var(--ax-border); border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,0.7); z-index: 1000; padding: 6px;">
               <!-- Populated dynamically via JS -->
             </div>
-          </div>
-
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <button type="button" class="quick-model-btn" data-action="quickSelectChatModel" data-value="antigravity-gemini-3.8-flash" style="background: none; border: 1px solid var(--ax-border); border-radius: 12px; font-size: 11px; color: var(--ax-text-muted); padding: 2px 8px; cursor: pointer; transition: all 0.2s;">Gemini 3.8</button>
-            <button type="button" class="quick-model-btn" data-action="quickSelectChatModel" data-value="gemini-4-argon" style="background: none; border: 1px solid var(--ax-border); border-radius: 12px; font-size: 11px; color: var(--ax-text-muted); padding: 2px 8px; cursor: pointer; transition: all 0.2s;">Argon</button>
-            <button type="button" class="quick-model-btn" data-action="quickSelectChatModel" data-value="deepseek-v4" style="background: none; border: 1px solid var(--ax-border); border-radius: 12px; font-size: 11px; color: var(--ax-text-muted); padding: 2px 8px; cursor: pointer; transition: all 0.2s;">DeepSeek V4</button>
           </div>
         </div>
 
