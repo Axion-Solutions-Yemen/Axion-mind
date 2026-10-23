@@ -1138,17 +1138,47 @@
     const chatModelPickerLabel = document.getElementById('chatModelPickerLabel');
     const chatModelPickerIcon = document.getElementById('chatModelPickerIcon');
 
+    function formatModelName(id) {
+      if (!id) return 'Select Model';
+      const cleanMap = {
+        'antigravity-gemini-3.8-flash': 'Gemini 3.8 Flash',
+        'antigravity-gemini-3.7-flash': 'Gemini 3.7 Flash',
+        'antigravity-gemini-3.6-flash': 'Gemini 3.6 Flash',
+        'antigravity-gemini-3.5-flash': 'Gemini 3.5 Flash',
+        'antigravity-gemini-3.1-pro': 'Gemini 3.1 Pro',
+        'antigravity-claude-sonnet-4-6-thinking': 'Claude Sonnet 3.7 Thinking',
+        'antigravity-claude-opus-4-6-thinking': 'Claude Opus 3.7 Thinking',
+        'antigravity-gemini-3.1-flash-image': 'Gemini 3.1 Vision',
+        'antigravity-gpt-oss-120b-medium': 'GPT OSS 120B',
+        'gemini-4-argon': 'Gemini 4 Argon',
+        'web-argon': 'Gemini Web Argon',
+        'gemini-web': 'Gemini Web',
+        'deepseek-v4': 'DeepSeek V4',
+        'deepseek-chat': 'DeepSeek Chat',
+        'deepseek-reasoner': 'DeepSeek Reasoner',
+        'ag-gemini': 'Gemini (Antigravity)',
+        'argon': 'Argon (Web)',
+        'gpt-lan': 'GPT LAN',
+        'ant-6-sol': 'Claude Solution'
+      };
+      if (cleanMap[id]) return cleanMap[id];
+      return id.replace(/^antigravity-/, '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+
     function getModelIcon(modelId) {
-      if (modelId.includes('gemini')) return '✨';
-      if (modelId.includes('claude')) return '🦁';
-      if (modelId.includes('deepseek')) return '⚡';
-      if (modelId.includes('gpt')) return '🧠';
+      if (!modelId) return '🤖';
+      const lower = modelId.toLowerCase();
+      if (lower.includes('claude') || lower.includes('sonnet') || lower.includes('opus')) return '🧠';
+      if (lower.includes('gemini') || lower.includes('argon') || lower.includes('flash')) return '⚡';
+      if (lower.includes('deepseek') || lower.includes('reasoner')) return '⚡';
+      if (lower.includes('gpt') || lower.includes('openai')) return '✨';
       return '🤖';
     }
 
     function setChatModel(modelId, displayName) {
       currentChatModel = modelId;
-      chatModelPickerLabel.textContent = displayName || modelId;
+      const formatted = displayName || formatModelName(modelId);
+      chatModelPickerLabel.textContent = formatted;
       chatModelPickerIcon.textContent = getModelIcon(modelId);
 
       document.querySelectorAll('.chat-model-menu-item').forEach(el => {
@@ -1175,6 +1205,8 @@
       setChatModel(modelId);
     };
 
+    let modelSearchQuery = '';
+
     async function populateChatModelPicker() {
       try {
         const models = await invoke('get_connected_hermes_models');
@@ -1182,162 +1214,143 @@
 
         chatModelDropdownMenu.innerHTML = '';
 
-        // Determine best model for each human-friendly tier
-        const fastModel = models.find(m => m.id.includes('gemini-3.8-flash')) 
-          || models.find(m => m.id.includes('gemini-3.7-flash')) 
-          || models.find(m => m.id.includes('flash')) 
-          || models[0];
-
-        const reasoningModel = models.find(m => m.id.includes('claude-sonnet') || m.id.includes('reasoner') || m.id.includes('claude-opus')) 
-          || models.find(m => m.id.includes('pro')) 
-          || fastModel;
-
-        const creativeModel = models.find(m => m.id.includes('argon')) 
-          || models.find(m => m.id.includes('deepseek-v4') || m.id.includes('chat')) 
-          || fastModel;
-
-        const tiers = [
-          {
-            id: fastModel ? fastModel.id : 'antigravity-gemini-3.8-flash',
-            title: 'Fast & Smart',
-            desc: 'Gemini 3.8 Flash • Instant daily answers & brainstorming',
-            icon: '⚡'
-          },
-          {
-            id: reasoningModel ? reasoningModel.id : 'antigravity-claude-sonnet-4-6-thinking',
-            title: 'Deep Reasoning',
-            desc: 'Claude / DeepSeek • Architecture, code & complex logic',
-            icon: '🧠'
-          },
-          {
-            id: creativeModel ? creativeModel.id : 'gemini-4-argon',
-            title: 'Long-Form Creative',
-            desc: 'Gemini Argon • Deep writing, synthesis & offer creation',
-            icon: '✍️'
-          }
-        ];
-
-        // Header for Core Intelligence Tiers
-        const coreHeader = document.createElement('div');
-        coreHeader.style.cssText = 'font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ax-text-muted); padding: 6px 10px 4px;';
-        coreHeader.textContent = 'Intelligence Tier';
-        chatModelDropdownMenu.appendChild(coreHeader);
-
-        tiers.forEach(tier => {
-          const item = document.createElement('div');
-          item.className = 'chat-model-menu-item';
-          item.setAttribute('data-model', tier.id);
-          item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: all 0.15s; margin-bottom: 3px;';
-          
-          const isSelected = tier.id === currentChatModel;
-          if (isSelected) {
-            item.style.background = 'rgba(99, 102, 241, 0.18)';
-            item.style.border = '1px solid rgba(99, 102, 241, 0.35)';
-          } else {
-            item.style.border = '1px solid transparent';
-          }
-
-          item.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
-              <span style="font-size: 16px;">${tier.icon}</span>
-              <div style="display: flex; flex-direction: column; min-width: 0;">
-                <span style="font-size: 12.5px; font-weight: 600; color: var(--ax-text);">${escapeHtml(tier.title)}</span>
-                <span style="font-size: 10px; color: var(--ax-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(tier.desc)}</span>
-              </div>
-            </div>
-            <span class="model-check" style="color: #818cf8; font-weight: bold; font-size: 13px; opacity: ${isSelected ? '1' : '0'};">✓</span>
-          `;
-
-          item.onmouseenter = () => {
-            if (item.getAttribute('data-model') !== currentChatModel) {
-              item.style.background = 'rgba(255, 255, 255, 0.05)';
-            }
-          };
-          item.onmouseleave = () => {
-            if (item.getAttribute('data-model') !== currentChatModel) {
-              item.style.background = 'transparent';
-            }
-          };
-
-          item.onclick = (e) => {
-            e.stopPropagation();
-            setChatModel(tier.id, `${tier.icon} ${tier.title}`);
-          };
-
-          chatModelDropdownMenu.appendChild(item);
-        });
-
-        // Advanced Models & Local Bridges Collapsible Section
-        const advToggle = document.createElement('div');
-        advToggle.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); cursor: pointer; color: var(--ax-text-muted); font-size: 11px; font-weight: 500; transition: color 0.15s;';
-        advToggle.innerHTML = `
-          <span>⚙️ All Local Bridges (${models.length})</span>
-          <span style="font-size: 9px;">${showAdvancedModels ? '▲ Hide' : '▼ Expand'}</span>
+        // Search input
+        const searchBox = document.createElement('div');
+        searchBox.style.cssText = 'padding: 2px 2px 6px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 6px;';
+        searchBox.innerHTML = `
+          <input type="text" id="modelFilterInput" placeholder="🔍 Search or filter any model..." value="${escapeHtml(modelSearchQuery)}" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid var(--ax-border); border-radius: 8px; padding: 6px 10px; font-size: 11.5px; color: var(--ax-text); outline: none;">
         `;
-        advToggle.onclick = (e) => {
-          e.stopPropagation();
-          showAdvancedModels = !showAdvancedModels;
-          populateChatModelPicker();
+        chatModelDropdownMenu.appendChild(searchBox);
+
+        const filterInput = searchBox.querySelector('#modelFilterInput');
+        filterInput.onclick = (e) => e.stopPropagation();
+        filterInput.onkeydown = (e) => e.stopPropagation();
+        filterInput.oninput = (e) => {
+          modelSearchQuery = e.target.value.toLowerCase().trim();
+          renderFilteredModels();
         };
-        chatModelDropdownMenu.appendChild(advToggle);
 
-        if (showAdvancedModels) {
-          const advContainer = document.createElement('div');
-          advContainer.style.cssText = 'padding-top: 4px;';
+        // Scrollable container for list
+        const listContainer = document.createElement('div');
+        listContainer.id = 'modelListItemsContainer';
+        listContainer.style.cssText = 'max-height: 280px; overflow-y: auto;';
+        chatModelDropdownMenu.appendChild(listContainer);
 
-          const groups = {};
-          models.forEach(m => {
-            const prov = m.provider || 'Other';
-            if (!groups[prov]) groups[prov] = [];
-            groups[prov].push(m);
+        function renderFilteredModels() {
+          listContainer.innerHTML = '';
+
+          const filtered = models.filter(m => {
+            if (!modelSearchQuery) return true;
+            const name = (m.name || '').toLowerCase();
+            const id = (m.id || '').toLowerCase();
+            const friendly = formatModelName(m.id).toLowerCase();
+            return name.includes(modelSearchQuery) || id.includes(modelSearchQuery) || friendly.includes(modelSearchQuery);
           });
 
-          for (const [providerName, items] of Object.entries(groups)) {
-            const groupHeader = document.createElement('div');
-            groupHeader.style.cssText = 'font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ax-text-muted); padding: 6px 10px 2px;';
-            groupHeader.textContent = providerName;
-            advContainer.appendChild(groupHeader);
+          if (filtered.length === 0) {
+            listContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--ax-text-muted); font-size: 11px;">No models match your search.</div>';
+          } else {
+            // Group models by clean category
+            const groups = {};
+            filtered.forEach(m => {
+              let prov = m.provider || 'Other Models';
+              if (prov.includes('8766')) prov = 'Antigravity / OAuth Models';
+              else if (prov.includes('8768')) prov = 'Gemini Web Models';
+              else if (prov.includes('8769')) prov = 'DeepSeek Web Models';
+              else if (prov.includes('Alias')) prov = 'Configured Aliases';
 
-            items.forEach(m => {
-              const item = document.createElement('div');
-              item.className = 'chat-model-menu-item';
-              item.setAttribute('data-model', m.id);
-              item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 5px 10px; border-radius: 6px; cursor: pointer; transition: background 0.15s; font-size: 11.5px; color: var(--ax-text);';
-              
-              const isSelected = m.id === currentChatModel;
-              if (isSelected) {
-                item.style.background = 'rgba(99, 102, 241, 0.2)';
-              }
-
-              item.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 7px; overflow: hidden;">
-                  <span style="font-size: 12px;">${getModelIcon(m.id)}</span>
-                  <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${isSelected ? '600' : '400'};">${escapeHtml(m.name)}</span>
-                </div>
-                <span class="model-check" style="color: #818cf8; font-weight: bold; font-size: 11px; opacity: ${isSelected ? '1' : '0'};">✓</span>
-              `;
-
-              item.onmouseenter = () => {
-                if (item.getAttribute('data-model') !== currentChatModel) {
-                  item.style.background = 'rgba(255, 255, 255, 0.05)';
-                }
-              };
-              item.onmouseleave = () => {
-                if (item.getAttribute('data-model') !== currentChatModel) {
-                  item.style.background = 'transparent';
-                }
-              };
-
-              item.onclick = (e) => {
-                e.stopPropagation();
-                setChatModel(m.id, m.name);
-              };
-
-              advContainer.appendChild(item);
+              if (!groups[prov]) groups[prov] = [];
+              groups[prov].push(m);
             });
+
+            for (const [groupName, items] of Object.entries(groups)) {
+              const groupHeader = document.createElement('div');
+              groupHeader.style.cssText = 'font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ax-text-muted); padding: 6px 8px 3px;';
+              groupHeader.textContent = groupName;
+              listContainer.appendChild(groupHeader);
+
+              items.forEach(m => {
+                const item = document.createElement('div');
+                item.className = 'chat-model-menu-item';
+                item.setAttribute('data-model', m.id);
+                item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 8px; cursor: pointer; transition: all 0.15s; margin-bottom: 2px;';
+
+                const isSelected = m.id === currentChatModel;
+                if (isSelected) {
+                  item.style.background = 'rgba(99, 102, 241, 0.18)';
+                  item.style.border = '1px solid rgba(99, 102, 241, 0.35)';
+                } else {
+                  item.style.border = '1px solid transparent';
+                }
+
+                const friendlyName = formatModelName(m.id);
+                item.innerHTML = `
+                  <div style="display: flex; align-items: center; gap: 9px; overflow: hidden; min-width: 0;">
+                    <span style="font-size: 14px; flex-shrink: 0;">${getModelIcon(m.id)}</span>
+                    <div style="display: flex; flex-direction: column; min-width: 0;">
+                      <span style="font-size: 12px; font-weight: ${isSelected ? '600' : '500'}; color: var(--ax-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(friendlyName)}</span>
+                      <span style="font-size: 9.5px; color: var(--ax-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.75;">${escapeHtml(m.id)}</span>
+                    </div>
+                  </div>
+                  <span class="model-check" style="color: #818cf8; font-weight: bold; font-size: 12px; opacity: ${isSelected ? '1' : '0'}; flex-shrink: 0; margin-left: 6px;">✓</span>
+                `;
+
+                item.onmouseenter = () => {
+                  if (item.getAttribute('data-model') !== currentChatModel) {
+                    item.style.background = 'rgba(255, 255, 255, 0.05)';
+                  }
+                };
+                item.onmouseleave = () => {
+                  if (item.getAttribute('data-model') !== currentChatModel) {
+                    item.style.background = 'transparent';
+                  }
+                };
+
+                item.onclick = (e) => {
+                  e.stopPropagation();
+                  setChatModel(m.id, friendlyName);
+                };
+
+                listContainer.appendChild(item);
+              });
+            }
           }
-          chatModelDropdownMenu.appendChild(advContainer);
         }
+
+        renderFilteredModels();
+
+        // Custom Model Direct Input row at bottom
+        const customContainer = document.createElement('div');
+        customContainer.style.cssText = 'border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px; margin-top: 6px;';
+        customContainer.innerHTML = `
+          <div style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; color: var(--ax-text-muted); margin-bottom: 4px; padding-left: 2px;">Use Custom Model ID</div>
+          <div style="display: flex; gap: 6px;">
+            <input type="text" id="customModelDirectInput" placeholder="e.g. claude-3-7-sonnet" style="flex: 1; min-width: 0; background: rgba(255,255,255,0.06); border: 1px solid var(--ax-border); border-radius: 6px; padding: 5px 8px; font-size: 11px; color: var(--ax-text); outline: none;">
+            <button type="button" id="btnApplyCustomDirectModel" style="background: var(--ax-primary); color: var(--ax-on-primary); border: none; border-radius: 6px; padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;">Set</button>
+          </div>
+        `;
+        customContainer.onclick = (e) => e.stopPropagation();
+        chatModelDropdownMenu.appendChild(customContainer);
+
+        const customInput = customContainer.querySelector('#customModelDirectInput');
+        const customBtn = customContainer.querySelector('#btnApplyCustomDirectModel');
+        const applyCustom = (e) => {
+          e.stopPropagation();
+          const val = customInput.value.trim();
+          if (val) {
+            setChatModel(val, val);
+          }
+        };
+        customBtn.onclick = applyCustom;
+        customInput.onkeydown = (e) => {
+          e.stopPropagation();
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            applyCustom(e);
+          }
+        };
+
+        setTimeout(() => filterInput.focus(), 60);
       } catch (err) {
         console.error('Failed to populate chat model picker:', err);
       }

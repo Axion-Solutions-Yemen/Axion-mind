@@ -29,11 +29,10 @@ test('minimalist UI: sidebar tab switcher markup exists', () => {
   assert.ok(chatAppJs.includes('Hermes (Personal Agent)'), 'Hermes (Personal Agent) name configured');
 });
 
-test('minimalist UI: JS defines 3 clean intelligence tiers', () => {
-  assert.ok(chatAppJs.includes('Fast & Smart'), 'Fast & Smart tier defined');
-  assert.ok(chatAppJs.includes('Deep Reasoning'), 'Deep Reasoning tier defined');
-  assert.ok(chatAppJs.includes('Long-Form Creative'), 'Long-Form Creative tier defined');
-  assert.ok(chatAppJs.includes('All Local Bridges'), 'Collapsible advanced bridges toggle defined');
+test('minimalist UI: JS defines exact model formatting, search, and custom model input', () => {
+  assert.ok(chatAppJs.includes('formatModelName'), 'formatModelName helper defined');
+  assert.ok(chatAppJs.includes('modelFilterInput'), 'Search filter input defined in model picker');
+  assert.ok(chatAppJs.includes('customModelDirectInput'), 'Direct custom model input defined in model picker');
 });
 
 test('minimalist UI: session capping logic implemented', () => {
