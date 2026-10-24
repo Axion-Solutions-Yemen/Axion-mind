@@ -8,10 +8,29 @@ mod db;
 mod llm;
 mod chat_cancel;
 mod chat_store;
+mod conference;
 mod updater;
 
 #[tauri::command]
 fn get_chat_storage_scope() -> Result<String, String> { backup::scope_id(&personas::get_app_data_dir()?) }
+
+#[tauri::command]
+fn get_conference_options()->serde_json::Value { conference::options() }
+#[tauri::command]
+fn list_conference_rooms(scope:String)->Result<Vec<conference::Room>,String> { conference::ConferenceStore::scoped(&scope)?.list() }
+#[tauri::command]
+fn get_conference_room(room_id:String,scope:String)->Result<conference::Room,String> { conference::ConferenceStore::scoped(&scope)?.get(&room_id) }
+#[tauri::command]
+fn create_conference_room(topic:String,participants:Vec<conference::ParticipantInput>,scope:String)->Result<conference::Room,String> { conference::ConferenceStore::scoped(&scope)?.create(&topic,participants) }
+#[tauri::command]
+fn update_conference_participants(room_id:String,participants:Vec<conference::ParticipantInput>,scope:String)->Result<conference::Room,String> { conference::ConferenceStore::scoped(&scope)?.update(&room_id,participants) }
+#[tauri::command]
+async fn stream_conference_round(room_id:String,message:String,request_id:String,scope:String,on_event:Channel<serde_json::Value>)->Result<conference::Room,String> {
+    let store=conference::ConferenceStore::scoped(&scope)?;
+    conference::run(store,&scope,&room_id,&message,&request_id,|room| {let _=on_event.send(serde_json::json!({"type":"room","room":room}));}).await
+}
+#[tauri::command]
+fn cancel_conference_round(request_id:String,scope:String) { conference::cancel(&scope,&request_id); }
 
 #[tauri::command]
 async fn append_persona_turn(session_id:String, request_id:String, message:String, response:String, model:Option<String>, scope:String) -> Result<(),String> {
@@ -280,61 +299,13 @@ async fn show_desktop_notification(title: String, body: String) -> Result<(), St
 }
 
 #[tauri::command]
-async fn export_customer_backup() -> Result<String, String> {
-    tokio::task::spawn_blocking(move || {
-        use std::fs::File;
-        use std::io::{Read, Write};
-        use walkdir::WalkDir;
-        use zip::write::SimpleFileOptions;
-
-        let hub_dir = personas::get_app_data_dir()?;
-        let downloads = dirs::download_dir()
-            .or_else(dirs::desktop_dir)
-            .ok_or("Cannot locate Downloads directory")?;
-        
-        let now = chrono_or_timestamp();
-        let backup_filename = format!("AxionMind_Backup_{}.zip", now);
-        let backup_path = downloads.join(&backup_filename);
-
-        let file = File::create(&backup_path).map_err(|e| format!("Failed to create zip: {}", e))?;
-        let mut zip = zip::ZipWriter::new(file);
-        let options = SimpleFileOptions::default()
-            .compression_method(zip::CompressionMethod::Deflated);
-
-        for entry in WalkDir::new(&hub_dir).into_iter().filter_map(|e| e.ok()) {
-            let path = entry.path();
-            let rel_path = match path.strip_prefix(&hub_dir) {
-                Ok(p) => p,
-                Err(_) => continue,
-            };
-            let rel_str = rel_path.to_string_lossy().replace('\\', "/");
-            if rel_str.is_empty() {
-                continue;
-            }
-
-            // Exclude secrets, credentials, configs, system logs, and non-customer artifacts
-            let first_segment = rel_str.split('/').next().unwrap_or("");
-            let is_customer_data = matches!(first_segment, "personas.json" | "chats" | "sessions" | "personas_data");
-            if !is_customer_data || rel_str.starts_with('.') || rel_str.ends_with(".dpapi") || rel_str.ends_with(".log") || rel_str == "config.json" {
-                continue;
-            }
-
-            if entry.file_type().is_dir() {
-                let _ = zip.add_directory(&rel_str, SimpleFileOptions::default());
-            } else if entry.file_type().is_file() {
-                zip.start_file(&rel_str, options).map_err(|e| e.to_string())?;
-                let mut f = File::open(path).map_err(|e| e.to_string())?;
-                let mut buffer = Vec::new();
-                f.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
-                zip.write_all(&buffer).map_err(|e| e.to_string())?;
-            }
-        }
-
-        zip.finish().map_err(|e| format!("Failed to finalize zip: {}", e))?;
-        Ok(backup_path.to_string_lossy().to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
+async fn export_customer_backup()->Result<String,String>{
+ tokio::task::spawn_blocking(move||{
+  let root=personas::get_app_data_dir()?;
+  let destination=if let Some(sandbox)=app_paths::sandbox()?{let dir=sandbox.join("exports");std::fs::create_dir_all(&dir).map_err(|e|e.to_string())?;dir}else{dirs::download_dir().or_else(dirs::desktop_dir).ok_or("Cannot locate Downloads")?};
+  let path=destination.join(format!("AxionMind_Backup_{}_{:x}.zip",chrono_or_timestamp(),rand::random::<u32>()));
+  backup::write_zip(&root,&path)?;Ok(path.to_string_lossy().into())
+ }).await.map_err(|e|e.to_string())?
 }
 
 fn chrono_or_timestamp() -> String {
@@ -344,41 +315,11 @@ fn chrono_or_timestamp() -> String {
 }
 
 #[tauri::command]
-async fn restore_customer_backup(zip_path: String) -> Result<usize, String> {
-    tokio::task::spawn_blocking(move || {
-        use std::fs::{self, File};
-        use std::io::copy;
-
-        let hub_dir = personas::get_app_data_dir()?;
-        let zpath = std::path::Path::new(&zip_path);
-        if !zpath.exists() {
-            return Err("Selected backup file does not exist.".to_string());
-        }
-
-        let file = File::open(zpath).map_err(|e| format!("Cannot open zip file: {}", e))?;
-        let mut archive = zip::ZipArchive::new(file).map_err(|e| format!("Invalid zip archive: {}", e))?;
-
-        let mut restored_count = 0;
-        for i in 0..archive.len() {
-            let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
-            let raw_path = file.mangled_name();
-            let outpath = hub_dir.join(&raw_path);
-
-            if file.name().ends_with('/') {
-                let _ = fs::create_dir_all(&outpath);
-            } else {
-                if let Some(p) = outpath.parent() {
-                    let _ = fs::create_dir_all(p);
-                }
-                let mut outfile = File::create(&outpath).map_err(|e| e.to_string())?;
-                copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
-                restored_count += 1;
-            }
-        }
-        Ok(restored_count)
-    })
-    .await
-    .map_err(|e| e.to_string())?
+async fn restore_customer_backup(zip_path:String)->Result<usize,String>{
+ tokio::task::spawn_blocking(move||{
+  let root=personas::get_app_data_dir()?;let snapshot=backup::read_zip(std::path::Path::new(&zip_path))?;
+  conference::with_idle_store(&root,||backup::restore_into(&snapshot,&root))
+ }).await.map_err(|e|e.to_string())?
 }
 
 #[tauri::command]
@@ -533,113 +474,28 @@ async fn recover_cloud_snapshot(snapshot: serde_json::Value, expected_owner: Str
 }
 
 #[tauri::command]
-async fn export_all_data_json() -> Result<serde_json::Value, String> {
-    tokio::task::spawn_blocking(move || {
-        let app_dir = crate::personas::get_app_data_dir()?;
-        
-        // 1. Read personas.json
-        let personas_file = app_dir.join("personas.json");
-        let personas_val: serde_json::Value = if personas_file.exists() {
-            let s = std::fs::read_to_string(&personas_file).unwrap_or_else(|_| "[]".to_string());
-            serde_json::from_str(&s).unwrap_or(serde_json::json!([]))
-        } else {
-            serde_json::json!([])
-        };
-
-        // 2. Read all chats
-        let chats_dir = app_dir.join("chats");
-        let mut chats_map = serde_json::Map::new();
-        if let Ok(entries) = std::fs::read_dir(chats_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.extension().and_then(|s| s.to_str()) == Some("json") {
-                    if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                        if let Ok(s) = std::fs::read_to_string(&path) {
-                            if let Ok(json_msgs) = serde_json::from_str::<serde_json::Value>(&s) {
-                                chats_map.insert(stem.to_string(), json_msgs);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 3. Read Dual-RAG Knowledge Cards
-        let data_dir = app_dir.join("personas_data");
-        let mut data_files = serde_json::Map::new();
-        if data_dir.exists() {
-            for entry in walkdir::WalkDir::new(&data_dir).into_iter().flatten() {
-                if entry.file_type().is_file() {
-                    let path = entry.path();
-                    if let Ok(rel) = path.strip_prefix(&data_dir) {
-                        let rel_str = rel.to_string_lossy().replace('\\', "/");
-                        if let Ok(content) = std::fs::read_to_string(path) {
-                            data_files.insert(rel_str, serde_json::Value::String(content));
-                        }
-                    }
-                }
-            }
-        }
-
-        Ok(serde_json::json!({
-            "personas": personas_val,
-            "chats": chats_map,
-            "personas_data": data_files
-        }))
-    })
-    .await
-    .map_err(|e| e.to_string())?
+async fn export_all_data_json()->Result<serde_json::Value,String>{
+ tokio::task::spawn_blocking(move||{
+  let snapshot=backup::capture(&personas::get_app_data_dir()?)?;let files=backup::validate(&snapshot)?;
+  let mut payload=serde_json::json!({"personas":[],"chats":{},"sessions":{},"personas_data":{},"conferences":{}});
+  for (rel,text) in files{if rel=="personas.json"{payload["personas"]=serde_json::from_str(text.trim_start_matches('\u{feff}')).map_err(|e|e.to_string())?;}else if let Some((category,name))=rel.split_once('/'){
+   if category=="personas_data"{payload[category][name]=serde_json::json!(text);}else{payload[category][name.trim_end_matches(".json")]=serde_json::from_str(text.trim_start_matches('\u{feff}')).map_err(|e|e.to_string())?;}
+  }}Ok(payload)
+ }).await.map_err(|e|e.to_string())?
 }
 
 #[tauri::command]
-async fn import_all_data_json(payload: serde_json::Value) -> Result<String, String> {
-    tokio::task::spawn_blocking(move || {
-        let app_dir = crate::personas::get_app_data_dir()?;
-
-        // 1. Restore personas
-        if let Some(personas_val) = payload.get("personas") {
-            let personas_file = app_dir.join("personas.json");
-            let _ = std::fs::write(personas_file, serde_json::to_string_pretty(personas_val).unwrap_or_default());
-        }
-
-        // 2. Restore chats
-        if let Some(chats_obj) = payload.get("chats").and_then(|v| v.as_object()) {
-            let chats_dir = app_dir.join("chats");
-            let _ = std::fs::create_dir_all(&chats_dir);
-            for (stem, msgs) in chats_obj {
-                // Reject path traversal, directory separators, and control characters in chat filenames
-                if stem.contains('/') || stem.contains('\\') || stem.contains("..") || stem.chars().any(|c| c.is_control()) {
-                    continue;
-                }
-                let file_path = chats_dir.join(format!("{}.json", stem));
-                let _ = std::fs::write(file_path, serde_json::to_string_pretty(msgs).unwrap_or_default());
-            }
-        }
-
-        // 3. Restore Dual-RAG Knowledge Cards
-        if let Some(data_files) = payload.get("personas_data").and_then(|v| v.as_object()) {
-            let data_dir = app_dir.join("personas_data");
-            for (rel_path, content_val) in data_files {
-                if let Some(content) = content_val.as_str() {
-                    let normalized = rel_path.replace('\\', "/");
-                    // Enforce that the path stays strictly under personas_data (no .. traversal, no absolute paths)
-                    let p = std::path::Path::new(&normalized);
-                    if p.is_absolute() || normalized.starts_with('/') || p.components().any(|c| matches!(c, std::path::Component::ParentDir | std::path::Component::Prefix(_) | std::path::Component::RootDir)) {
-                        continue;
-                    }
-                    let target_path = data_dir.join(p);
-                    if let Some(parent) = target_path.parent() {
-                        let _ = std::fs::create_dir_all(parent);
-                    }
-                    let _ = std::fs::write(&target_path, content);
-                }
-            }
-        }
-
-        Ok("Successfully imported and synchronized all data!".to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
+async fn import_all_data_json(payload:serde_json::Value)->Result<String,String>{
+ tokio::task::spawn_blocking(move||{
+  let root=personas::get_app_data_dir()?;let mut files=serde_json::Map::new();
+  let personas=if let Some(value)=payload.get("personas"){serde_json::to_string_pretty(value).map_err(|e|e.to_string())?}else{std::fs::read_to_string(root.join("personas.json")).map_err(|e|e.to_string())?};
+  files.insert("personas.json".into(),serde_json::json!(personas));
+  for category in ["chats","sessions","conferences","personas_data"]{if let Some(value)=payload.get(category){let map=value.as_object().ok_or("Invalid import category")?;
+   for (name,value) in map{let (rel,text)=if category=="personas_data"{(format!("{category}/{name}"),value.as_str().ok_or("Invalid knowledge file")?.to_string())}else{(format!("{category}/{name}.json"),serde_json::to_string_pretty(value).map_err(|e|e.to_string())?)};files.insert(rel,serde_json::json!(text));}
+  }}
+  let snapshot=serde_json::json!({"version":1,"files":files});conference::with_idle_store(&root,||backup::restore_into(&snapshot,&root))?;
+  Ok("Successfully imported customer data, including conference rooms.".into())
+ }).await.map_err(|e|e.to_string())?
 }
 
 static ACCOUNT_SESSION_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
@@ -731,6 +587,13 @@ fn main() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
+            get_conference_options,
+            list_conference_rooms,
+            get_conference_room,
+            create_conference_room,
+            update_conference_participants,
+            stream_conference_round,
+            cancel_conference_round,
             get_personas,
             open_chat_link,
             save_all_personas,

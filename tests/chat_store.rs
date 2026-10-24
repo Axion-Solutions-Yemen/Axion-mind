@@ -1,6 +1,6 @@
 #[path="../src/chat_store.rs"] mod chat_store;
 use std::path::PathBuf;
-fn root()->PathBuf{let p=PathBuf::from("C:/Users/AR-Qamzawi/AppData/Local/hermes/cache/scratch").join(format!("axion-chat-store-{}",rand::random::<u64>()));std::fs::create_dir_all(p.join("chats")).unwrap();p}
+fn root()->PathBuf{let p=PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-scratch").join(format!("axion-chat-store-{}",rand::random::<u64>()));std::fs::create_dir_all(p.join("chats")).unwrap();p}
 #[test]
 fn retry_is_exactly_once_and_preserves_unrecognized_customer_fields(){
  let p=root();let file=p.join("chats/alpha_one.json");std::fs::write(&file,r#"[{"role":"user","content":"original","custom_field":{"keep":true}}]"#).unwrap();

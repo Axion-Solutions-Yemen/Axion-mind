@@ -493,6 +493,7 @@ pub async fn stream_persona_chat(
     let mut stream = response.bytes_stream();
     let mut byte_buffer = Vec::new();
     let mut has_terminal_error = false;
+    let mut has_finish = false;
     let mut token_count = 0;
 
     while let Some(chunk_res) = cancellation.run(async { Ok(stream.next().await) }).await? {
@@ -548,6 +549,7 @@ pub async fn stream_persona_chat(
             }
 
             if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(data_str) {
+                has_finish |= json_val["choices"][0]["finish_reason"].as_str() == Some("stop");
                 if let Some(delta) = provider_reasoning(&json_val) {
                     channel.send(ChatStreamEvent::Thinking { delta: delta.to_string() }).ok();
                 }
@@ -614,11 +616,75 @@ pub async fn stream_persona_chat(
         }
     }
 
+    if !has_terminal_error && !has_finish {
+        return Err("Model stream ended before completion; partial output was saved".into());
+    }
     if !has_terminal_error {
         let elapsed = start_time.elapsed().as_secs_f64();
         channel.send(ChatStreamEvent::Done { elapsed_sec: elapsed }).ok();
     }
     Ok(())
+}
+
+/// Completion-only transport: explicit provider/model, caller-owned cancellation, no RAG or tools.
+pub async fn stream_model_chat<F: FnMut(ChatStreamEvent)->Result<(),String>>(
+    provider:&str, model:&str, system:&str, message:&str,
+    cancellation:&mut crate::chat_cancel::RequestGuard, mut emit:F,
+) -> Result<(),String> {
+    if model.trim().is_empty(){return Err("An exact model is required".into());}
+    let config=load_config();
+    let (url,token)=match provider {
+        "custom_gateway"=>(config.custom_url.clone(),config.custom_auth_token.clone()),
+        "hermes_local"=>{
+            let lower=model.to_lowercase();
+            let bridge=if lower.contains("deepseek"){Some(8769)}else if lower.contains("argon")||lower.contains("gemini-web"){Some(8768)}else if ["antigravity","3.8-flash","3.7-flash","sonnet","opus"].iter().any(|s|lower.contains(s)){Some(8766)}else{None};
+            match bridge{Some(port)=>(format!("http://127.0.0.1:{port}/v1/chat/completions"),String::new()),None=>(format!("{}/v1/chat/completions",config.hermes_gateway_url.trim_end_matches('/')),config.hermes_auth_token.clone())}
+        },
+        "openai"|"openrouter"|"groq"|"gemini"=>{
+            if config.cloud_provider!=provider{return Err(format!("Configure {provider} as the cloud provider before using it. The current provider's key will not be sent elsewhere."));}
+            let url=match provider{"openai"=>"https://api.openai.com/v1/chat/completions","openrouter"=>"https://openrouter.ai/api/v1/chat/completions","groq"=>"https://api.groq.com/openai/v1/chat/completions",_=>"https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"};
+            (url.into(),config.cloud_api_key.clone())
+        },
+        _=>return Err("Unknown conference provider".into()),
+    };
+    let client=reqwest::Client::builder().timeout(Duration::from_secs(180)).redirect(reqwest::redirect::Policy::none()).build().map_err(|e|e.to_string())?;
+    let mut request=client.post(url.trim()).json(&serde_json::json!({"model":model,"stream":true,"messages":[{"role":"system","content":system},{"role":"user","content":message}]}));
+    if !token.trim().is_empty(){request=request.bearer_auth(token.trim());}
+    let start=std::time::Instant::now();
+    let response=cancellation.run(async{request.send().await.map_err(|e|format!("Model connection failed: {e}"))}).await?;
+    if !response.status().is_success(){return Err(format!("Model provider returned HTTP {}",response.status().as_u16()));}
+    let sse=response.headers().get(CONTENT_TYPE).and_then(|v|v.to_str().ok()).is_some_and(|s|s.contains("text/event-stream"));
+    let mut has_text=false;let mut terminal=false;
+    let mut packet=|data:&str|->Result<bool,String>{
+        if data=="[DONE]"{return Ok(true);}
+        let value:serde_json::Value=serde_json::from_str(data).map_err(|_|"Invalid model response JSON")?;
+        if let Some(error)=value.get("error"){return Err(error.as_str().or_else(||error["message"].as_str()).unwrap_or("Model provider error").to_string());}
+        if let Some(delta)=provider_reasoning(&value){emit(ChatStreamEvent::Thinking{delta:delta.into()})?;}
+        let first=&value["choices"][0];let delta=first.get("delta").or_else(||first.get("message"));
+        if let Some(content)=delta.and_then(|d|d["content"].as_str()).filter(|s|!s.is_empty()){has_text=true;emit(ChatStreamEvent::Token{delta:content.into()})?;}
+        if delta.is_some_and(|d|d.get("tool_calls").is_some()||d.get("function_call").is_some()){return Err("Discussion models cannot call tools".into());}
+        match first["finish_reason"].as_str(){Some("stop")=>Ok(true),Some(reason)=>Err(format!("Model response incomplete: {reason}")),None=>Ok(false)}
+    };
+    if !sse{
+        let text=cancellation.run(async{response.text().await.map_err(|e|e.to_string())}).await?;
+        packet(&text)?;terminal=true;
+    }else{
+        let mut stream=response.bytes_stream();let mut buffer=Vec::new();
+        'stream: while let Some(chunk)=cancellation.run(async{Ok(stream.next().await)}).await?{
+            buffer.extend_from_slice(&chunk.map_err(|e|format!("Model stream failed: {e}"))?);
+            if buffer.len()>4*1024*1024{return Err("Model stream packet exceeds size limit".into());}
+            while let Some(pos)=buffer.iter().position(|&b|b==b'\n'){
+                let line=String::from_utf8(buffer.drain(..=pos).collect()).map_err(|_|"Model stream is not UTF-8")?;
+                let line=line.trim();if let Some(data)=line.strip_prefix("data:"){
+                    if packet(data.trim())?{terminal=true;break 'stream;}
+                }
+            }
+        }
+        if !terminal&&!buffer.is_empty(){let line=std::str::from_utf8(&buffer).map_err(|_|"Model stream is not UTF-8")?.trim();if let Some(data)=line.strip_prefix("data:"){terminal=packet(data.trim())?;}}
+    }
+    if !terminal{return Err("Model stream ended before completion; partial output was saved".into());}
+    if !has_text{return Err("Model returned no response text".into());}
+    emit(ChatStreamEvent::Done{elapsed_sec:start.elapsed().as_secs_f64()})
 }
 
 pub async fn test_ai_connection(config: AppConfig) -> Result<String, String> {

@@ -400,6 +400,7 @@
 
     // Switch active item (persona or native session)
     async function selectItem(mode, id) {
+      window.AxionConferenceUI?.leave();
       activeMode = mode;
       activeId = id;
 
@@ -628,6 +629,7 @@
 
     // Send Message
     async function sendMessage() {
+      if (activeMode === 'conference') return;
       const text = chatInputEl.value.trim();
       if (!text || !activeId) return;
       if (isStreaming && activeChatRequest?.stopped) {
@@ -1612,7 +1614,7 @@
         const selectedZip = await invoke('pick_backup_zip_file');
         if (!selectedZip) return;
 
-        if (!confirm(`Are you sure you want to restore data from:\n${selectedZip}\n\nThis will merge personas and chat history.`)) {
+        if (!confirm(`Are you sure you want to restore data from:\n${selectedZip}\n\nThis replaces matching personas, chats, and conference room files. Unlisted files are kept.`)) {
           return;
         }
 
@@ -2531,4 +2533,3 @@
     } else {
       init();
     }
-  

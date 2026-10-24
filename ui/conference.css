@@ -1,0 +1,35 @@
+.conference-sidebar{border-bottom:1px solid var(--ax-border);padding:8px 14px;max-height:220px;overflow:auto;flex-shrink:0}
+.conference-sidebar-heading{display:flex;align-items:center;justify-content:space-between}.conference-sidebar h2{font-size:12px;margin:0}
+.conference-sidebar button,#conferenceView button,#conferenceDialog button{background:var(--ax-surface-raised);border:1px solid var(--ax-border);border-radius:6px;color:var(--ax-text);padding:7px 10px;cursor:pointer;font:inherit}
+#conferenceRooms button{display:block;width:100%;text-align:start;margin-top:5px;font-size:12px;overflow-wrap:anywhere}
+#conferenceRooms button[aria-current=true]{border-color:var(--ax-primary);color:var(--ax-primary)}
+#conferenceSidebarError:empty,#conferenceError:empty,#conferenceDialogError:empty{display:none}
+.chat-view.conference-active> :not(#conferenceView){display:none!important}
+#conferenceView:not([hidden]){display:flex;flex:1;min-height:0;flex-direction:column;height:100%}
+.conference-header{padding:20px 24px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid var(--ax-border)}
+.conference-header h2{font-size:18px;overflow-wrap:anywhere;margin:0 0 8px}.conference-header p,#conferenceMentionHelp,#conferenceDialogHelp{color:var(--ax-muted);font-size:12px;line-height:1.5}
+#conferenceRoster{padding:10px 24px;display:flex;gap:6px;flex-wrap:wrap;max-height:120px;overflow:auto}
+#conferenceRoster span{font-size:11px;border:1px solid var(--ax-border);border-radius:6px;padding:5px 8px;overflow-wrap:anywhere}
+#conferenceTranscript{flex:1;min-height:0;overflow:auto;padding:8px 24px 20px;overscroll-behavior:contain}
+.conference-entry{border:1px solid var(--ax-border);border-radius:10px;margin:12px 0;padding:14px;overflow-wrap:anywhere}
+.conference-entry header{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;font-size:12px}.conference-entry header span{color:var(--ax-muted)}
+.conference-entry .message-content{margin-top:10px;max-width:100%;min-width:0}.conference-entry .message-content pre{overflow:auto}
+.conference-entry[data-status=failed],.conference-entry[data-status=interrupted]{border-color:#d98d50}
+.conference-composer{padding:12px 24px 20px;border-top:1px solid var(--ax-border)}
+.conference-composer label{display:block;margin:6px 0}
+#conferenceMentionHelp{margin:4px 0 10px}
+.conference-input-row{display:flex;align-items:center;gap:8px}.conference-input-row textarea{flex:1;min-width:0;resize:vertical;max-height:160px}
+#conferenceView label,#conferenceDialog label{font-size:13px}#conferenceStatus{font-size:12px;min-height:18px}
+#conferenceError,#conferenceDialogError,#conferenceSidebarError,.conference-entry-error{color:#f5b596;font-size:12px}
+#conferenceView textarea,#conferenceDialog input,#conferenceDialog select{font:inherit;color:var(--ax-text);background:var(--ax-surface);border:1px solid var(--ax-border);border-radius:6px;padding:8px}
+#conferenceDialog{background:var(--ax-bg);color:var(--ax-text);border:1px solid var(--ax-border);border-radius:12px;padding:24px;width:min(680px,90vw);max-height:85vh;overflow:auto;margin:auto}
+#conferenceDialog::backdrop{background:rgba(0,0,0,.65)}#conferenceDialog h2{font-size:19px;margin:0 0 10px}
+#conferenceTopicInput{display:block;width:100%;box-sizing:border-box;margin:6px 0 16px}#conferenceDialog fieldset{border:1px solid var(--ax-border);border-radius:8px;padding:12px}
+.conference-participant-option{display:grid;grid-template-columns:1fr 135px 1fr;gap:8px;align-items:center;margin:10px 0}.conference-participant-option label{overflow-wrap:anywhere}.conference-participant-option input[type=checkbox]{margin-inline-end:7px}
+.conference-participant-option input[list]{min-width:0;width:100%;box-sizing:border-box}.conference-participant-option small{display:block;color:var(--ax-muted);font-size:10px}
+.conference-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+#conferenceView button:disabled,#conferenceDialog button:disabled{opacity:.55;cursor:default}
+.conference-sidebar button:focus-visible,#conferenceView :focus-visible,#conferenceDialog :focus-visible{outline:2px solid var(--ax-primary);outline-offset:3px}
+@media(max-width:1000px){.conference-participant-option{grid-template-columns:1fr 120px}.conference-participant-option input[list]{grid-column:1/-1}.conference-header{padding:16px}.conference-composer{padding:12px 16px}.conference-input-row{flex-wrap:wrap}.conference-input-row textarea{flex-basis:100%}}
+
+.conference-entry details pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;color:var(--ax-muted);max-height:160px;overflow:auto}

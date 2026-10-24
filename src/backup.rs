@@ -1,6 +1,7 @@
 //! Strict, credential-free portable customer snapshots.
 use serde_json::{json, Value};
 use std::{collections::BTreeMap, fs, path::Path};
+#[path="conference_schema.rs"] mod conference_schema;
 const MAX_FILE: usize = 4 * 1024 * 1024;
 const MAX_TOTAL: usize = 16 * 1024 * 1024;
 const MAX_FILES: usize = 10_000;
@@ -22,7 +23,7 @@ fn safe_path(rel: &str) -> Result<(), String> {
             return Err("Backup contains a reserved Windows path.".into());
         }
     }
-    let allowed=rel=="personas.json" || (parts.len()==2 && matches!(parts[0],"chats"|"sessions") && rel.ends_with(".json")) || (parts.len()>=2 && parts[0]=="personas_data");
+    let allowed=rel=="personas.json" || (parts.len()==2 && matches!(parts[0],"chats"|"sessions"|"conferences") && rel.ends_with(".json")) || (parts.len()>=2 && parts[0]=="personas_data");
     if !allowed { return Err("Backup contains a file outside customer data categories.".into()); }
     Ok(())
 }
@@ -30,7 +31,7 @@ fn safe_path(rel: &str) -> Result<(), String> {
 fn capture_once(root: &Path) -> Result<BTreeMap<String,String>,String> {
     let mut result=BTreeMap::new(); let mut total=0;
     if root.symlink_metadata().map_err(|_|"Cannot inspect customer storage.")?.file_type().is_symlink() { return Err("Customer storage cannot be a symbolic link for backup.".into()); }
-    for sub in ["personas.json","chats","sessions","personas_data"] {
+    for sub in ["personas.json","chats","sessions","personas_data","conferences"] {
         let start=root.join(sub);
         let metadata=match fs::symlink_metadata(&start) {
             Ok(metadata)=>metadata,
@@ -51,7 +52,7 @@ fn capture_once(root: &Path) -> Result<BTreeMap<String,String>,String> {
             total+=bytes.len();
             if bytes.len()>MAX_FILE || total>MAX_TOTAL || result.len()>=MAX_FILES {return Err("Customer snapshot exceeds supported backup limits.".into());}
             let text=String::from_utf8(bytes).map_err(|_|"A customer file is not UTF-8; no complete backup was created.")?;
-            if rel.ends_with(".json") {serde_json::from_str::<Value>(text.trim_start_matches('\u{feff}')).map_err(|_|"A customer JSON file is invalid; no complete backup was created.")?;}
+            validate_customer_file(&rel,&text)?;
             result.insert(rel,text);
         }
     }
@@ -72,7 +73,7 @@ pub fn validate(snapshot: &Value) -> Result<BTreeMap<String,String>,String> {
             if !prefix.is_empty(){prefix.push('/');} prefix.push_str(part);
             if let Some(previous)=aliases.insert(prefix.to_lowercase(),prefix.clone()) {if previous!=prefix{return Err("Snapshot contains case-colliding Windows paths.".into());}}
         }
-        if rel.ends_with(".json") {serde_json::from_str::<Value>(text.trim_start_matches('\u{feff}')).map_err(|_|"Snapshot JSON is invalid.")?;}
+        validate_customer_file(&rel,&text)?;
         result.insert(rel.clone(),text.to_string());
     }
     for rel in result.keys() {
@@ -111,4 +112,52 @@ pub fn capture(root: &Path) -> Result<Value,String> {
     let second=capture_once(root)?;
     if first!=second { return Err("Customer files changed while exporting. Save your work and retry.".into()); }
     Ok(json!({"version":1,"files":first}))
+}
+
+pub fn validate_customer_file(rel:&str,text:&str)->Result<(),String>{
+ safe_path(rel)?;
+ if rel.ends_with(".json") {
+  let value:Value=serde_json::from_str(text.trim_start_matches('\u{feff}')).map_err(|_|"Invalid customer JSON")?;
+  if let Some(id)=rel.strip_prefix("conferences/").and_then(|s|s.strip_suffix(".json")){conference_schema::validate(&value,id)?;}
+ }
+ Ok(())
+}
+
+pub fn write_zip(root:&Path,destination:&Path)->Result<(),String>{
+    use std::io::Write;
+    let snapshot=capture(root)?;let files=validate(&snapshot)?;
+    let file=fs::OpenOptions::new().write(true).create_new(true).open(destination).map_err(|e|e.to_string())?;
+    let mut zip=zip::ZipWriter::new(file);
+    for (rel,text) in files {zip.start_file(rel,zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated)).map_err(|e|e.to_string())?;zip.write_all(text.as_bytes()).map_err(|e|e.to_string())?;}
+    zip.finish().map_err(|e|e.to_string())?.sync_all().map_err(|e|e.to_string())
+}
+pub fn read_zip(path:&Path)->Result<Value,String>{
+    use std::io::Read;
+    let mut zip=zip::ZipArchive::new(fs::File::open(path).map_err(|e|e.to_string())?).map_err(|e|e.to_string())?;
+    if zip.len()>MAX_FILES {return Err("Archive has too many entries".into());}
+    let mut files=BTreeMap::new();let mut total=0;
+    for i in 0..zip.len(){let file=zip.by_index(i).map_err(|e|e.to_string())?;
+        if file.is_dir(){continue;}
+        let name=file.name().to_string();safe_path(&name)?;
+        if file.size()>MAX_FILE as u64{return Err("Archive file exceeds size limit".into());}
+        let mut bytes=Vec::new();file.take((MAX_FILE+1) as u64).read_to_end(&mut bytes).map_err(|e|e.to_string())?;total+=bytes.len();
+        if bytes.len()>MAX_FILE||total>MAX_TOTAL{return Err("Archive exceeds size limits".into());}
+        let text=String::from_utf8(bytes).map_err(|_|"Archive contains non-UTF8 customer data")?;
+        if files.insert(name,text).is_some(){return Err("Archive contains duplicate entries".into());}
+    }
+    let snapshot=json!({"version":1,"files":files});validate(&snapshot)?;Ok(snapshot)
+}
+/// Explicit legacy restore: validate every file and destination before replacing matching files.
+/// Unlisted customer data is retained. Cloud recovery continues to use restore_new.
+pub fn restore_into(snapshot:&Value,root:&Path)->Result<usize,String>{
+    use std::io::Write;
+    let files=validate(snapshot)?;
+    for rel in files.keys(){let target=root.join(rel);for ancestor in target.ancestors(){
+        if let Ok(meta)=fs::symlink_metadata(ancestor){if meta.file_type().is_symlink(){return Err("Restore target contains a symbolic link".into());}}
+    }}
+    let stage=root.join(format!(".axion-import-{:032x}",rand::random::<u128>()));fs::create_dir(&stage).map_err(|e|e.to_string())?;
+    let outcome=(||{for (rel,text) in &files{let target=stage.join(rel);fs::create_dir_all(target.parent().unwrap()).map_err(|e|e.to_string())?;
+        let mut file=fs::File::create(target).map_err(|e|e.to_string())?;file.write_all(text.as_bytes()).and_then(|_|file.sync_all()).map_err(|e|e.to_string())?;}
+        for rel in files.keys(){let target=root.join(rel);fs::create_dir_all(target.parent().unwrap()).map_err(|e|e.to_string())?;fs::rename(stage.join(rel),target).map_err(|e|e.to_string())?;}Ok(files.len())})();
+    let _=fs::remove_dir_all(stage);outcome
 }

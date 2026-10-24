@@ -1291,6 +1291,11 @@
         <button type="button" id="tabHermes" class="sidebar-tab-btn" style="flex: 1; padding: 6px 8px; font-size: 11px; font-weight: 600; background: transparent; border: 1px solid transparent; border-radius: 6px; color: var(--ax-text-muted); cursor: pointer; transition: all 0.2s;">⚡ Personal Agent</button>
       </div>
 
+      <section class="conference-sidebar" aria-labelledby="conferenceSidebarTitle">
+        <div class="conference-sidebar-heading"><h2 id="conferenceSidebarTitle">Conference rooms</h2><button type="button" id="btnNewConference" aria-label="Create conference room">+</button></div>
+        <nav id="conferenceRooms" aria-label="Saved conference rooms"></nav>
+        <p id="conferenceSidebarError" role="status"></p>
+      </section>
       <div class="personas-list" id="personasList">
         <!-- Injected via JS -->
       </div>
@@ -1312,6 +1317,18 @@
 
     <!-- Main Chat View -->
     <main class="chat-view">
+      <section id="conferenceView" hidden aria-label="Conference room">
+        <header class="conference-header"><div><h2 id="conferenceTopic"></h2><p>Room-only discussion · Personal Agent synthesizes last · No tools or private chats</p></div><button type="button" id="btnEditConference">Edit participants</button></header>
+        <div id="conferenceRoster" aria-label="Current participants"></div>
+        <div id="conferenceTranscript" tabindex="0" aria-label="Speaker-attributed conference transcript"></div>
+        <div class="conference-composer">
+          <p id="conferenceStatus" role="status" aria-live="polite"></p>
+          <p id="conferenceError" role="alert"></p>
+          <label for="conferenceInput">Message to the room</label>
+          <p id="conferenceMentionHelp">All personas respond in order. Target someone with @id or @[Full Name]. Ambiguous names are rejected.</p>
+          <div class="conference-input-row"><textarea id="conferenceInput" dir="auto" rows="2" aria-describedby="conferenceMentionHelp" placeholder="Start a round…"></textarea><button type="button" id="btnConferenceSend">Send round</button><button type="button" id="btnConferenceStop" hidden>Stop round</button></div>
+        </div>
+      </section>
       <header class="chat-header">
         <div class="active-persona-details">
           <button class="mobile-menu-btn" id="btnToggleMobileSidebar">☰</button>
@@ -1371,6 +1388,18 @@
       </div>
     </main>
   </div>
+
+  <dialog id="conferenceDialog" aria-labelledby="conferenceDialogTitle" aria-describedby="conferenceDialogHelp">
+    <form id="conferenceForm">
+      <h2 id="conferenceDialogTitle">Create conference room</h2>
+      <p id="conferenceDialogHelp">Choose existing personas and an exact model for each. The optional Personal Agent discusses and synthesizes only; it has no live Hermes session, tools, or private chat history.</p>
+      <label for="conferenceTopicInput">Room topic</label><input id="conferenceTopicInput" required maxlength="500" dir="auto">
+      <fieldset><legend>Participants · speaking order follows this list</legend><div id="conferenceParticipantOptions"></div></fieldset>
+      <datalist id="conferenceModels"></datalist>
+      <p id="conferenceDialogError" role="alert"></p>
+      <div class="conference-dialog-actions"><button type="button" id="btnCancelConference">Cancel</button><button type="submit" id="btnSaveConference">Create room</button></div>
+    </form>
+  </dialog>
 
   <!-- Hermes Control Center Modal -->
   <div class="modal-backdrop" id="hermesControlModal">
@@ -1851,6 +1880,9 @@
   <script src="dialog-accessibility.js"></script>
   <script src="updater.js"></script>
 
+  <link rel="stylesheet" href="conference.css">
+  <script src="conference.js"></script>
   <script src="chat-app.js"></script>
+  <script src="conference-ui.js"></script>
 </body>
 </html>

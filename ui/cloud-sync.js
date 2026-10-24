@@ -11,6 +11,14 @@ function canonical(value){
 async function sha(text){const data=await globalThis.crypto.subtle.digest('SHA-256',encoder.encode(text));return Array.from(new Uint8Array(data),b=>b.toString(16).padStart(2,'0')).join('');}
 async function uuid(text){const h=(await sha(text)).slice(0,32).split('');h[12]='8';h[16]=((parseInt(h[16],16)&3)|8).toString(16);const s=h.join('');return `${s.slice(0,8)}-${s.slice(8,12)}-${s.slice(12,16)}-${s.slice(16,20)}-${s.slice(20)}`;}
 function parse(text){try{return JSON.parse(text.replace(/^\uFEFF/,''));}catch(_){throw new Error('Customer JSON is invalid. No complete backup was created.');}}
+function validateRoom(v,id){
+ const providers=['hermes_local','custom_gateway','openai','openrouter','groq','gemini'],statuses=['pending','streaming','completed','failed','cancelled','interrupted'];
+ const str=s=>typeof s==='string',nonempty=s=>str(s)&&!!s.trim(),date=s=>str(s)&&Number.isFinite(Date.parse(s)),nullable=s=>s===null||str(s),identity=s=>str(s)&&/^[a-z0-9_-]{1,128}$/i.test(s);
+ const fail=()=>{throw Error('Invalid conference room.');};
+ if(!v||v.version!==1||v.id!==id||!identity(id)||!nonempty(v.topic)||!date(v.created_at)||!date(v.updated_at)||!Number.isSafeInteger(v.round)||v.round<0||!['idle','running','completed','failed','cancelled','interrupted'].includes(v.status)||!nullable(v.active_request_id)||(v.status==='running')!==nonempty(v.active_request_id)||!Array.isArray(v.participants)||!v.participants.length||v.participants.length>32||!Array.isArray(v.transcript))fail();
+ const ids=new Set();for(const p of v.participants){if(!p||!identity(p.id)||ids.has(p.id)||!nonempty(p.name)||!nonempty(p.model)||!providers.includes(p.provider)||!['persona','hermes'].includes(p.kind)||(p.kind==='hermes')!==(p.id==='__hermes__'))fail();ids.add(p.id);}
+ ids.clear();for(const e of v.transcript){if(!e||!identity(e.id)||ids.has(e.id)||!nonempty(e.request_id)||!nonempty(e.speaker_id)||!nonempty(e.speaker_name)||!Number.isSafeInteger(e.round)||e.round<1||e.round>v.round||!str(e.content)||!str(e.thinking)||!nullable(e.error)||!date(e.created_at)||!(e.completed_at===null||date(e.completed_at))||!statuses.includes(e.status)||!(e.kind==='user'?e.model===null&&e.provider===null:['persona','hermes'].includes(e.kind)&&nonempty(e.model)&&providers.includes(e.provider)))fail();ids.add(e.id);}
+}
 function validateSnapshot(snapshot){
  if(!snapshot||snapshot.version!==1||!snapshot.files||Array.isArray(snapshot.files)||typeof snapshot.files!=='object')throw new Error('Unsupported customer snapshot.');
  const names=Object.keys(snapshot.files);if(!names.length||names.length>10000||!names.includes('personas.json'))throw new Error('Snapshot file inventory is incomplete.');
@@ -18,11 +26,11 @@ function validateSnapshot(snapshot){
  for(const rel of names){
   const parts=rel.split('/');
   if(parts.some(p=>!p||p==='.'||p==='..'||/[\\:*?"<>|\x00-\x1f]/.test(p)||/[. ]$/.test(p)||/^(CON|PRN|AUX|NUL|COM\d|LPT\d)(\.|$)/i.test(p)))throw new Error('Unsafe snapshot path.');
-  if(!(rel==='personas.json'||(parts.length===2&&['chats','sessions'].includes(parts[0])&&rel.endsWith('.json'))||(parts.length>=2&&parts[0]==='personas_data')))throw new Error('Snapshot includes a non-customer file.');
+  if(!(rel==='personas.json'||(parts.length===2&&['chats','sessions','conferences'].includes(parts[0])&&rel.endsWith('.json'))||(parts.length>=2&&parts[0]==='personas_data')))throw new Error('Snapshot includes a non-customer file.');
   let prefix='';for(const part of parts){prefix+=(prefix?'/':'')+part;const k=prefix.toLowerCase();if(aliases.has(k)&&aliases.get(k)!==prefix)throw new Error('Case-colliding snapshot paths.');aliases.set(k,prefix);}
   const text=snapshot.files[rel];if(typeof text!=='string')throw new Error('Snapshot file is not text.');
   const bytes=encoder.encode(text).length;total+=bytes;if(bytes>4*1024*1024||total>16*1024*1024)throw new Error('Snapshot exceeds backup size limits.');
-  if(rel.endsWith('.json'))parse(text);
+  if(rel.endsWith('.json')){const value=parse(text);if(parts[0]==='conferences')validateRoom(value,parts[1].slice(0,-5));}
   for(let i=1;i<parts.length;i++)if(Object.hasOwn(snapshot.files,parts.slice(0,i).join('/')))throw new Error('Conflicting snapshot paths.');
  }
  if(!Array.isArray(parse(snapshot.files['personas.json'])))throw new Error('Persona data must be an array.');
@@ -61,7 +69,7 @@ async function prepare(input,owner){
   chats.push({user_id:owner,persona_slug:slug,session_id:stem,title:stem,messages_json:messages});
  }
  const manifest=[];for(const rel of Object.keys(snapshot.files).sort())manifest.push({path:rel,bytes:encoder.encode(snapshot.files[rel]).length,sha256:await sha(snapshot.files[rel])});
- return {snapshot,owner,digest:await sha(canonical(snapshot)),manifest,personas,parents:[...parents.values()],cards,chats,counts:{personas:personas.length,chats:chats.length,frameworks,anecdotes,files:manifest.length,knowledgeFiles:Object.keys(snapshot.files).filter(p=>p.startsWith('personas_data/')).length,sessionFiles:Object.keys(snapshot.files).filter(p=>p.startsWith('sessions/')).length}};
+ return {snapshot,owner,digest:await sha(canonical(snapshot)),manifest,personas,parents:[...parents.values()],cards,chats,counts:{personas:personas.length,chats:chats.length,frameworks,anecdotes,files:manifest.length,knowledgeFiles:Object.keys(snapshot.files).filter(p=>p.startsWith('personas_data/')).length,sessionFiles:Object.keys(snapshot.files).filter(p=>p.startsWith('sessions/')).length,...(Object.keys(snapshot.files).some(p=>p.startsWith('conferences/'))?{conferences:Object.keys(snapshot.files).filter(p=>p.startsWith('conferences/')).length}:{})}};
 }
 class CloudError extends Error {constructor(message,code){super(message);this.code=code;}}
 function createEngine(options){
