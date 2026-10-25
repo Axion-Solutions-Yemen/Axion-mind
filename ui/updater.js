@@ -15,10 +15,37 @@
     throw new Error('Tauri IPC unavailable');
   }
 
+  // Render existing update results without changing download/install/restart decisions.
+  function showUpdateStatus(state, title, message, retry = false) {
+    const modal = document.getElementById('updateModal');
+    if (!modal) return;
+    modal.dataset.updateState = state;
+    document.getElementById('updateDialogTitle').textContent = title;
+    document.getElementById('updateDialogDescription').textContent = message;
+    document.getElementById('updateVersionComparison').hidden = true;
+    document.getElementById('updateNotesSection').style.display = 'none';
+    document.getElementById('updateProgressSection').style.display = 'none';
+    document.getElementById('updateStatusMsg').style.display = 'none';
+    document.getElementById('btnPerformUpdate').hidden = true;
+    document.getElementById('btnRetryUpdateCheck').hidden = !retry;
+    document.getElementById('btnCloseUpdateModal').disabled = false;
+    document.getElementById('btnLaterUpdate').disabled = false;
+    document.getElementById('btnLaterUpdate').textContent = 'Close';
+    modal.querySelector('.modal-body').setAttribute('aria-busy', String(state === 'checking'));
+    modal.classList.add('open');
+  }
+
   function showUpdateModal(update) {
     currentPendingUpdate = update;
     const modal = document.getElementById('updateModal');
     if (!modal) return;
+    modal.dataset.updateState = 'available';
+    document.getElementById('updateDialogTitle').textContent = 'Update available';
+    document.getElementById('updateDialogDescription').textContent = 'Review the release, then update and restart Axion Mind.';
+    document.getElementById('updateVersionComparison').hidden = false;
+    document.getElementById('btnRetryUpdateCheck').hidden = true;
+    document.getElementById('btnCloseUpdateModal').disabled = false;
+    modal.querySelector('.modal-body').setAttribute('aria-busy', 'false');
 
     const targetVer = document.getElementById('updateTargetVersion');
     const currentVer = document.getElementById('updateCurrentVersion');
@@ -45,13 +72,13 @@
     if (statusMsg) statusMsg.style.display = 'none';
 
     if (btnPerform) {
+      btnPerform.hidden = false;
       btnPerform.disabled = false;
       btnPerform.textContent = 'Update & Restart';
-      btnPerform.style.opacity = '1';
     }
     if (btnLater) {
       btnLater.disabled = false;
-      btnLater.style.opacity = '1';
+      btnLater.textContent = 'Remind Me Later';
     }
 
     modal.classList.add('open');
@@ -66,6 +93,7 @@
   async function checkForUpdates(manual = false) {
     if (isChecking) return;
     isChecking = true;
+    if (manual) showUpdateStatus('checking', 'Checking for updates', 'Contacting the configured update service…');
 
     const btnCheck = document.getElementById('btnCheckAppUpdate');
     const origText = btnCheck ? btnCheck.textContent : '';
@@ -79,12 +107,13 @@
       if (update && update.available) {
         showUpdateModal(update);
       } else if (manual) {
-        alert("You're running the latest version of Axion Mind (" + (update?.current_version || 'v0.2.0') + ").");
+        showUpdateStatus('current', 'No update available', update?.current_version
+          ? `You are running Axion Mind ${update.current_version}.` : 'The update service reports no available update.');
       }
     } catch (err) {
       console.warn('Update check status:', err);
       if (manual) {
-        alert('Could not verify updates at this time: ' + (err?.message || err));
+        showUpdateStatus('check-error', 'Update check unavailable', 'Could not verify updates at this time: ' + (err?.message || err), true);
       }
     } finally {
       isChecking = false;
@@ -98,6 +127,14 @@
   async function performUpdate() {
     if (isInstalling) return;
     isInstalling = true;
+    const updateModal = document.getElementById('updateModal');
+    updateModal.dataset.updateState = 'downloading';
+    updateModal.querySelector('.modal-body').setAttribute('aria-busy', 'true');
+    document.getElementById('btnCloseUpdateModal').disabled = true;
+    const progressTrack = document.getElementById('updateProgressTrack');
+    progressTrack.dataset.indeterminate = 'true';
+    progressTrack.removeAttribute('aria-valuenow');
+    progressTrack.setAttribute('aria-valuetext', 'Downloading; total size not yet reported');
 
     const btnPerform = document.getElementById('btnPerformUpdate');
     const btnLater = document.getElementById('btnLaterUpdate');
@@ -110,19 +147,19 @@
     if (btnPerform) {
       btnPerform.disabled = true;
       btnPerform.textContent = 'Downloading...';
-      btnPerform.style.opacity = '0.7';
     }
     if (btnLater) {
       btnLater.disabled = true;
-      btnLater.style.opacity = '0.5';
     }
     if (progSec) progSec.style.display = 'flex';
     if (progBar) progBar.style.width = '0%';
-    if (progPct) progPct.textContent = '0%';
+    if (progPct) progPct.textContent = '—';
     if (statusMsg) statusMsg.style.display = 'none';
 
     try {
       await invoke('download_and_install_update');
+      updateModal.dataset.updateState = 'restarting';
+      progressTrack.dataset.indeterminate = 'false';
       if (progLabel) progLabel.textContent = 'Installing & relaunching...';
       if (btnPerform) btnPerform.textContent = 'Restarting...';
       setTimeout(async () => {
@@ -134,20 +171,22 @@
       }, 800);
     } catch (err) {
       isInstalling = false;
+      updateModal.dataset.updateState = 'install-error';
+      updateModal.querySelector('.modal-body').setAttribute('aria-busy', 'false');
+      document.getElementById('btnCloseUpdateModal').disabled = false;
+      progressTrack.dataset.indeterminate = 'false';
       if (btnPerform) {
         btnPerform.disabled = false;
         btnPerform.textContent = 'Retry Update';
-        btnPerform.style.opacity = '1';
       }
       if (btnLater) {
         btnLater.disabled = false;
-        btnLater.style.opacity = '1';
       }
       if (statusMsg) {
         statusMsg.style.display = 'block';
-        statusMsg.style.background = 'rgba(239, 68, 68, 0.15)';
-        statusMsg.style.color = '#fca5a5';
-        statusMsg.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        statusMsg.style.background = 'var(--ax-danger-subtle)';
+        statusMsg.style.color = 'var(--ax-danger)';
+        statusMsg.style.border = '1px solid var(--ax-control-border)';
         statusMsg.textContent = 'Update failed: ' + (err?.message || err);
       }
     }
@@ -162,17 +201,30 @@
         const progPct = document.getElementById('updateProgressPercent');
         const progLabel = document.getElementById('updateProgressLabel');
 
+        const track = document.getElementById('updateProgressTrack');
         if (payload.percentage !== null && payload.percentage !== undefined) {
+          track.dataset.indeterminate = 'false';
+          track.setAttribute('aria-valuenow', String(payload.percentage));
+          track.setAttribute('aria-valuetext', payload.percentage + '% downloaded');
           if (progBar) progBar.style.width = payload.percentage + '%';
           if (progPct) progPct.textContent = payload.percentage + '%';
           if (progLabel) progLabel.textContent = 'Downloading update (' + payload.percentage + '%)...';
         } else if (payload.downloaded_bytes) {
+          track.dataset.indeterminate = 'true';
+          track.removeAttribute('aria-valuenow');
+          if (progPct) progPct.textContent = '—';
           const mb = (payload.downloaded_bytes / (1024 * 1024)).toFixed(1);
           if (progLabel) progLabel.textContent = 'Downloaded ' + mb + ' MB...';
+          track.setAttribute('aria-valuetext', 'Downloaded ' + mb + ' MB; total size not reported');
         }
       });
 
       window.__TAURI__.event.listen('updater-downloaded', () => {
+        document.getElementById('updateModal').dataset.updateState = 'installing';
+        const track = document.getElementById('updateProgressTrack');
+        track.dataset.indeterminate = 'false';
+        track.setAttribute('aria-valuenow', '100');
+        track.setAttribute('aria-valuetext', 'Download complete. Installing.');
         const progLabel = document.getElementById('updateProgressLabel');
         const progPct = document.getElementById('updateProgressPercent');
         const progBar = document.getElementById('updateProgressBar');
@@ -185,6 +237,7 @@
     document.getElementById('btnCloseUpdateModal')?.addEventListener('click', closeUpdateModal);
     document.getElementById('btnLaterUpdate')?.addEventListener('click', closeUpdateModal);
     document.getElementById('btnPerformUpdate')?.addEventListener('click', performUpdate);
+    document.getElementById('btnRetryUpdateCheck')?.addEventListener('click', () => document.getElementById('btnCheckAppUpdate')?.click());
     document.getElementById('btnCheckAppUpdate')?.addEventListener('click', () => checkForUpdates(true));
 
     window.axionCheckForUpdates = checkForUpdates;

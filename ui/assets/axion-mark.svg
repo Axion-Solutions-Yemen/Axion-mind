@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 7 52 50" role="img" aria-labelledby="axionMarkTitle">
+  <title id="axionMarkTitle">Axion Mind</title>
+  <path class="axion-mark-primary" fill="var(--ax-mark-primary, #171719)" d="M10.5 53.5 28.7 16.5c2.2-4.5 4-6.6 6-6.6s3.8 2.1 6 6.6l17 37H46.4L34.7 28.8 22.3 53.5Z"/>
+  <path class="axion-mark-secondary" fill="var(--ax-mark-secondary, #77777E)" d="M24.3 42.6 48.6 36.7 52.4 44.2 20.5 51.2Z"/>
+</svg>

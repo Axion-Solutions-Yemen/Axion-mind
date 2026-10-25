@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="axion-mark-title">
+  <title id="axion-mark-title">Axion Mind — geometric A symbol</title>
+  <style>
+    .mark-body { fill: #17181b; }
+    .mark-core { fill: #8d939f; }
+    @media (prefers-color-scheme: dark) {
+      .mark-body { fill: #f4f5f7; }
+      .mark-core { fill: #9ea5b1; }
+    }
+
+  </style>
+  <!-- Main structural form: one continuous, precisely balanced arch. -->
+  <path class="mark-body" fill="#17181b" d="M10.5 53.5 28.7 16.5c2.2-4.5 4-6.6 6-6.6s3.8 2.1 6 6.6l17 37H46.4L34.7 28.8 22.3 53.5Z"/>
+  <!-- Satellite/crossbeam: second independent solid, optically offset. -->
+  <path class="mark-core" fill="#8d939f" d="M24.3 42.6 48.6 36.7 52.4 44.2 20.5 51.2Z"/>
+</svg>

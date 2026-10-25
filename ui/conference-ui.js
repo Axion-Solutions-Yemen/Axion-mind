@@ -9,7 +9,7 @@
   function update(state){lastState=state;if(renderFrame!==null)return;renderFrame=requestAnimationFrame(()=>{renderFrame=null;render(lastState);});}
   function render(state){
     const list=el('conferenceRooms'),focusedRoom=list.contains(document.activeElement)?document.activeElement.dataset.roomId:null;list.replaceChildren();
-    for(const room of state.rooms){const button=text('button',room.topic);button.type='button';button.dataset.roomId=room.id;button.setAttribute('aria-current',String(visible&&state.room?.id===room.id));button.onclick=()=>openRoom(room.id);list.append(button);}
+    for(const room of state.rooms){const button=text('button',room.topic);button.type='button';button.dataset.roomId=room.id;button.setAttribute('aria-current',String(visible&&state.room?.id===room.id));button.title=room.topic;button.replaceChildren();const glyph=document.createElement('span');glyph.innerHTML=window.AxionPresentation.icon('chat');glyph.setAttribute('aria-hidden','true');button.append(glyph,text('span',room.topic));button.onclick=()=>openRoom(room.id);list.append(button);}
     if(!state.rooms.length)list.append(text('p','No rooms yet.'));
     if(focusedRoom)[...list.children].find(n=>n.dataset.roomId===focusedRoom)?.focus({preventScroll:true});
     el('conferenceSidebarError').textContent=visible?'':state.error;
@@ -25,18 +25,18 @@
     const expanded=new Set([...transcript.querySelectorAll('article')].filter(n=>n.querySelector('details[open]')).map(n=>n.dataset.entryId));
     const fragment=document.createDocumentFragment();
     for(const entry of room?.transcript||[]){
-      const article=document.createElement('article');article.className='conference-entry';article.dataset.status=entry.status;article.dataset.entryId=entry.id;
-      const header=document.createElement('header');header.append(text('strong',entry.speaker_name||'You'),text('span',entry.kind==='user'?'You':`${entry.provider} / ${entry.model}`),text('span',entry.status));article.append(header);
+      const article=document.createElement('article');article.className='conference-entry';article.dataset.status=entry.status;article.dataset.entryId=entry.id;article.dataset.kind=entry.kind;
+      const header=document.createElement('header');header.append(text('strong',entry.speaker_name||'You'),text('span',entry.kind==='user'?'You':`${entry.provider} / ${entry.model}`),text('span',entry.status,'conference-entry-status'));article.append(header);
       const content=document.createElement('div');content.className='message-content';content.dir='auto';content.innerHTML=marked.parse(entry.content||'');article.append(content);
       if(entry.thinking){const details=document.createElement('details');details.open=expanded.has(entry.id);details.append(text('summary','Model reasoning'),text('pre',entry.thinking));article.append(details);}
       if(entry.error)article.append(text('p',entry.error,'conference-entry-error'));fragment.append(article);
     }
-    if(room&&!room.transcript.length)fragment.append(text('p','Start a round to discuss this topic. Only this room’s transcript is shared.'));
+    if(room&&!room.transcript.length)fragment.append(text('p','Start a round to discuss this topic. Only this room’s transcript is shared.','conference-transcript-empty'));
     transcript.replaceChildren(fragment);if(nearBottom)transcript.scrollTop=transcript.scrollHeight;else transcript.scrollTop=oldScroll;
   }
-  async function openRoom(id){visible=true;activeMode='conference';activeId=id;activeAgentId='';++historyLoadEpoch;
+  async function openRoom(id){window.AxionMotion.cancelConversation();visible=true;activeMode='conference';activeId=id;activeAgentId='';++historyLoadEpoch;
     view.hidden=false;view.parentElement.classList.add('conference-active');document.getElementById('sidebar').classList.remove('open');
-    await controller.open(id);if(visible&&!dialog.open)el('conferenceInput').focus();}
+    await controller.open(id);if(visible&&controller.state().room?.id===id)window.AxionMotion.enter(el('conferenceTopic'),{kind:'navigation',distance:0,duration:180});if(visible&&!dialog.open)el('conferenceInput').focus();}
   function leave(){visible=false;view.hidden=true;view.parentElement.classList.remove('conference-active');update(controller.state());}
   function defaults(){return safeDefaults;}
   async function openDialog(edit=false){
@@ -72,6 +72,7 @@
     }catch(e){el('conferenceDialogError').textContent=String(e);}finally{el('btnSaveConference').disabled=false;}};
   async function send(){const input=el('conferenceInput'),draft=input.value;if(!draft.trim())return;
     if(await controller.send(draft.trim())){if(input.value===draft)input.value='';}}
+  el('btnConferenceSidebarToggle').onclick=()=>el('btnToggleMobileSidebar').click();
   el('btnConferenceSend').onclick=send;el('btnConferenceStop').onclick=()=>controller.stop();
   el('conferenceInput').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send();}};
   el('btnNewConference').onclick=()=>openDialog();el('btnEditConference').onclick=()=>openDialog(true);el('btnCancelConference').onclick=closeDialog;

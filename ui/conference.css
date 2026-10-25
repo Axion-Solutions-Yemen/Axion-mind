@@ -1,35 +1,93 @@
-.conference-sidebar{border-bottom:1px solid var(--ax-border);padding:8px 14px;max-height:220px;overflow:auto;flex-shrink:0}
-.conference-sidebar-heading{display:flex;align-items:center;justify-content:space-between}.conference-sidebar h2{font-size:12px;margin:0}
-.conference-sidebar button,#conferenceView button,#conferenceDialog button{background:var(--ax-surface-raised);border:1px solid var(--ax-border);border-radius:6px;color:var(--ax-text);padding:7px 10px;cursor:pointer;font:inherit}
-#conferenceRooms button{display:block;width:100%;text-align:start;margin-top:5px;font-size:12px;overflow-wrap:anywhere}
-#conferenceRooms button[aria-current=true]{border-color:var(--ax-primary);color:var(--ax-primary)}
-#conferenceSidebarError:empty,#conferenceError:empty,#conferenceDialogError:empty{display:none}
-.chat-view.conference-active> :not(#conferenceView){display:none!important}
-#conferenceView:not([hidden]){display:flex;flex:1;min-height:0;flex-direction:column;height:100%}
-.conference-header{padding:20px 24px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid var(--ax-border)}
-.conference-header h2{font-size:18px;overflow-wrap:anywhere;margin:0 0 8px}.conference-header p,#conferenceMentionHelp,#conferenceDialogHelp{color:var(--ax-muted);font-size:12px;line-height:1.5}
-#conferenceRoster{padding:10px 24px;display:flex;gap:6px;flex-wrap:wrap;max-height:120px;overflow:auto}
-#conferenceRoster span{font-size:11px;border:1px solid var(--ax-border);border-radius:6px;padding:5px 8px;overflow-wrap:anywhere}
-#conferenceTranscript{flex:1;min-height:0;overflow:auto;padding:8px 24px 20px;overscroll-behavior:contain}
-.conference-entry{border:1px solid var(--ax-border);border-radius:10px;margin:12px 0;padding:14px;overflow-wrap:anywhere}
-.conference-entry header{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;font-size:12px}.conference-entry header span{color:var(--ax-muted)}
-.conference-entry .message-content{margin-top:10px;max-width:100%;min-width:0}.conference-entry .message-content pre{overflow:auto}
-.conference-entry[data-status=failed],.conference-entry[data-status=interrupted]{border-color:#d98d50}
-.conference-composer{padding:12px 24px 20px;border-top:1px solid var(--ax-border)}
-.conference-composer label{display:block;margin:6px 0}
-#conferenceMentionHelp{margin:4px 0 10px}
-.conference-input-row{display:flex;align-items:center;gap:8px}.conference-input-row textarea{flex:1;min-width:0;resize:vertical;max-height:160px}
-#conferenceView label,#conferenceDialog label{font-size:13px}#conferenceStatus{font-size:12px;min-height:18px}
-#conferenceError,#conferenceDialogError,#conferenceSidebarError,.conference-entry-error{color:#f5b596;font-size:12px}
-#conferenceView textarea,#conferenceDialog input,#conferenceDialog select{font:inherit;color:var(--ax-text);background:var(--ax-surface);border:1px solid var(--ax-border);border-radius:6px;padding:8px}
-#conferenceDialog{background:var(--ax-bg);color:var(--ax-text);border:1px solid var(--ax-border);border-radius:12px;padding:24px;width:min(680px,90vw);max-height:85vh;overflow:auto;margin:auto}
-#conferenceDialog::backdrop{background:rgba(0,0,0,.65)}#conferenceDialog h2{font-size:19px;margin:0 0 10px}
-#conferenceTopicInput{display:block;width:100%;box-sizing:border-box;margin:6px 0 16px}#conferenceDialog fieldset{border:1px solid var(--ax-border);border-radius:8px;padding:12px}
-.conference-participant-option{display:grid;grid-template-columns:1fr 135px 1fr;gap:8px;align-items:center;margin:10px 0}.conference-participant-option label{overflow-wrap:anywhere}.conference-participant-option input[type=checkbox]{margin-inline-end:7px}
-.conference-participant-option input[list]{min-width:0;width:100%;box-sizing:border-box}.conference-participant-option small{display:block;color:var(--ax-muted);font-size:10px}
-.conference-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
-#conferenceView button:disabled,#conferenceDialog button:disabled{opacity:.55;cursor:default}
-.conference-sidebar button:focus-visible,#conferenceView :focus-visible,#conferenceDialog :focus-visible{outline:2px solid var(--ax-primary);outline-offset:3px}
-@media(max-width:1000px){.conference-participant-option{grid-template-columns:1fr 120px}.conference-participant-option input[list]{grid-column:1/-1}.conference-header{padding:16px}.conference-composer{padding:12px 16px}.conference-input-row{flex-wrap:wrap}.conference-input-row textarea{flex-basis:100%}}
-
-.conference-entry details pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;color:var(--ax-muted);max-height:160px;overflow:auto}
+/* Conference presentation; room execution and transcript ownership stay in the controller. */
+.conference-sidebar { border-bottom: 1px solid var(--ax-border); padding: 8px 16px 12px; max-height: min(200px, 26vh); overflow-y: auto; overscroll-behavior: contain; flex-shrink: 0; }
+.conference-sidebar-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.conference-sidebar h2 { margin: 0; font-size: var(--ax-font-size-caption); font-weight: var(--ax-weight-medium); color: var(--ax-text-secondary); }
+#conferenceRooms > p { margin: 8px; font-size: var(--ax-font-size-caption); color: var(--ax-text-secondary); }
+#conferenceRooms button { display: flex; align-items: center; justify-content: flex-start; gap: 8px; width: 100%; min-height: 36px; margin-top: 4px; padding: 8px; border: 0; border-radius: var(--ax-radius-control); background: transparent; color: var(--ax-text-secondary); font-size: var(--ax-font-size-label); text-align: start; }
+#conferenceRooms button > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#conferenceRooms button .ui-icon { width: 16px; height: 16px; flex-shrink: 0; }
+#conferenceRooms button:not(:disabled):hover { background: var(--ax-hover); color: var(--ax-text); }
+#conferenceRooms button[aria-current="true"] { background: var(--ax-selected); color: var(--ax-on-selected); }
+#conferenceRooms button:not(:disabled):active { background: var(--ax-active); }
+#conferenceSidebarError:empty, #conferenceError:empty, #conferenceDialogError:empty { display: none; }
+.chat-view.conference-active > :not(#conferenceView) { display: none !important; }
+#conferenceView:not([hidden]) { display: flex; flex: 1; min-width: 0; min-height: 0; flex-direction: column; height: 100%; background: var(--ax-chat-canvas); }
+.conference-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 32px 16px; border-bottom: 1px solid var(--ax-border); flex-shrink: 0; }
+.conference-header > div { min-width: 0; flex: 1; }
+.conference-header h2 { font-size: var(--ax-font-size-heading-md); font-weight: var(--ax-weight-semibold); line-height: var(--ax-leading-heading-md); overflow-wrap: anywhere; margin: 0 0 8px; }
+.conference-header p, #conferenceMentionHelp, #conferenceDialogHelp { color: var(--ax-text-secondary); font-size: var(--ax-font-size-caption); line-height: var(--ax-leading-body); }
+#conferenceRoster { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 32px; max-height: 112px; overflow: auto; flex-shrink: 0; }
+#conferenceRoster span { padding: 6px 10px; font-size: var(--ax-font-size-caption); line-height: var(--ax-leading-compact); background: var(--ax-surface-subtle); color: var(--ax-text-secondary); border-radius: var(--ax-radius-card); overflow-wrap: anywhere; }
+#conferenceTranscript { flex: 1; min-height: 0; min-width: 0; padding: 8px 32px 24px; overflow: auto; overscroll-behavior: contain; }
+.conference-entry { width: 100%; max-width: 800px; min-width: 0; margin: 0 auto 28px; padding: 0; border: 0; background: transparent; box-shadow: none; overflow-wrap: anywhere; }
+.conference-entry > header { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; font-size: var(--ax-font-size-caption); line-height: var(--ax-leading-compact); }
+.conference-entry > header strong { color: var(--ax-text); font-size: var(--ax-font-size-label); font-weight: var(--ax-weight-semibold); }
+.conference-entry > header span { color: var(--ax-text-secondary); overflow-wrap: anywhere; }
+.conference-entry > header .conference-entry-status { margin-inline-start: auto; }
+.conference-entry[data-status="failed"] .conference-entry-status, .conference-entry[data-status="interrupted"] .conference-entry-status { font-weight: var(--ax-weight-semibold); text-decoration: underline; text-underline-offset: 3px; }
+.conference-entry .message-content { margin-top: 12px; min-width: 0; max-width: 100%; background: transparent; font-size: var(--ax-font-size-body); line-height: var(--ax-leading-body); }
+.conference-entry[data-kind="user"] > .message-content { display: table; max-width: 90%; margin-inline-start: auto; padding: 12px 16px; border-radius: var(--ax-radius-card); background: var(--ax-surface-subtle); }
+.conference-entry .message-content pre { max-width: 100%; overflow: auto; border: 1px solid var(--ax-border); border-radius: var(--ax-radius-card); background: var(--ax-code-surface); color: var(--ax-code-text); font-family: var(--ax-font-code); font-size: var(--ax-font-size-code); padding: 0; }
+.conference-entry .message-content pre code { display: block; padding: 16px; color: inherit; background: transparent; white-space: pre; overflow-wrap: normal; word-break: normal; }
+.conference-entry .message-content :not(pre) > code { padding: 2px 6px; border-radius: var(--ax-radius-subtle); background: var(--ax-surface-subtle); color: var(--ax-text); font-family: var(--ax-font-code); font-size: var(--ax-font-size-code); }
+.conference-entry .message-content :is(h1, h2, h3, h4, h5, h6) { margin-block: 24px 12px; line-height: var(--ax-leading-heading-md); overflow-wrap: anywhere; }
+.conference-entry .message-content h1 { font-size: var(--ax-font-size-heading-lg); }
+.conference-entry .message-content h2 { font-size: var(--ax-font-size-heading-md); }
+.conference-entry .message-content :is(h3, h4, h5, h6) { font-size: var(--ax-font-size-heading-sm); }
+.conference-entry .message-content a { color: var(--ax-text); text-decoration: underline; text-underline-offset: 3px; }
+.conference-entry .message-content table { display: block; max-width: 100%; overflow-x: auto; margin-block: 16px; border: 1px solid var(--ax-border); border-radius: var(--ax-radius-card); border-spacing: 0; font-size: var(--ax-font-size-compact); }
+.conference-entry .message-content :is(th, td) { padding: 10px 14px; min-width: 8rem; text-align: start; vertical-align: top; border-bottom: 1px solid var(--ax-border); }
+.conference-entry .message-content th { background: var(--ax-surface-subtle); }
+.conference-entry .message-content :is(th, td) + :is(th, td) { border-inline-start: 1px solid var(--ax-border); }
+.conference-entry .message-content tbody tr:last-child td { border-bottom: 0; }
+.conference-entry details { margin-top: 12px; border: 1px solid var(--ax-border); border-radius: var(--ax-radius-card); background: var(--ax-surface); overflow: hidden; }
+.conference-entry summary { padding: 10px 12px; cursor: pointer; color: var(--ax-text-secondary); font-size: var(--ax-font-size-label); }
+.conference-entry details pre { margin: 0; padding: 12px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto; color: var(--ax-text-secondary); font: var(--ax-font-size-code)/var(--ax-leading-code) var(--ax-font-code); border-top: 1px solid var(--ax-border); }
+.conference-transcript-empty { max-width: 800px; margin: 24px auto; padding: 24px 0; color: var(--ax-text-secondary); font-size: var(--ax-font-size-body); line-height: var(--ax-leading-body); }
+.conference-composer { flex-shrink: 0; width: calc(100% - 64px); max-width: 800px; margin: 0 auto 24px; padding: 16px; border: 0; border-radius: var(--ax-radius-composer); background: var(--ax-surface-elevated); box-shadow: var(--ax-shadow-composer); }
+#conferenceStatus { font-size: var(--ax-font-size-caption); margin-bottom: 8px; overflow-wrap: anywhere; }
+#conferenceError, #conferenceDialogError, #conferenceSidebarError, .conference-entry-error { color: var(--ax-danger); font-size: var(--ax-font-size-caption); line-height: var(--ax-leading-body); overflow-wrap: anywhere; }
+#conferenceError, #conferenceDialogError, .conference-entry-error { padding: 12px; background: var(--ax-surface-subtle); border-radius: var(--ax-radius-control); }
+.conference-composer label { display: block; margin: 8px 0; }
+#conferenceMentionHelp { margin: 0 0 12px; }
+.conference-input-row { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 8px; }
+.conference-input-row textarea { flex: 1 1 100%; min-width: 0; width: 100%; min-height: 64px; max-height: 160px; resize: vertical; }
+section#conferenceView #conferenceInput { border: 0; outline: none; background: transparent; padding: 8px 0; }
+section#conferenceView #conferenceInput:focus-visible { background: color-mix(in srgb, var(--ax-surface-elevated) 96%, var(--ax-text)); outline: none; box-shadow: none; }
+#btnConferenceSend { margin-inline-start: auto; }
+#btnConferenceStop[hidden] { display: none; }
+dialog#conferenceDialog { width: 760px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto; overscroll-behavior: contain; margin: auto; padding: 24px; border-radius: var(--ax-radius-modal); background: var(--ax-surface-elevated); color: var(--ax-text); box-shadow: var(--ax-shadow-lg); }
+#conferenceForm { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.conference-dialog-heading { display: flex; align-items: center; gap: 12px; }
+.conference-dialog-heading > .ui-icon { width: 24px; height: 24px; }
+dialog#conferenceDialog h2 { margin: 0; }
+#conferenceTopicInput { width: 100%; min-width: 0; margin: 0; }
+dialog#conferenceDialog fieldset { min-width: 0; max-height: 40vh; overflow: auto; padding: 16px; border: 1px solid var(--ax-border); border-radius: var(--ax-radius-card); }
+#conferenceDialog legend { padding-inline: 6px; font-size: var(--ax-font-size-label); color: var(--ax-text-secondary); }
+.conference-participant-labels, .conference-participant-option { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(110px, .8fr) minmax(140px, 1fr); gap: 12px; align-items: center; }
+.conference-participant-labels { margin-bottom: 12px; font-size: var(--ax-font-size-caption); color: var(--ax-text-secondary); }
+.conference-participant-option + .conference-participant-option { margin-top: 12px; }
+.conference-participant-option label { min-width: 0; overflow-wrap: anywhere; font-size: var(--ax-font-size-label); }
+.conference-participant-option input[type="checkbox"] { margin-inline-end: 8px; }
+.conference-participant-option :is(select, input[list]) { min-width: 0; width: 100%; }
+.conference-participant-option small { display: block; margin-top: 4px; color: var(--ax-text-secondary); font-size: var(--ax-font-size-caption); }
+.conference-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: 0; padding-top: 16px; border-top: 1px solid var(--ax-border); }
+@media (max-width: 768px) {
+  .conference-header { padding: 16px; flex-wrap: wrap; }
+  #conferenceRoster { padding: 12px 16px; max-height: 88px; }
+  #conferenceTranscript { padding: 8px 16px 16px; }
+  .conference-composer { width: calc(100% - 32px); margin-bottom: 16px; }
+  .conference-header h2 { font-size: var(--ax-font-size-heading-sm); }
+}
+@media (max-width: 600px) {
+  dialog#conferenceDialog { padding: 16px; }
+  .conference-participant-labels { display: none; }
+  .conference-participant-option { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .conference-participant-option + .conference-participant-option { margin-top: 20px; }
+  .conference-input-row button { flex: 1 1 120px; }
+}
+@media (max-height: 650px) {
+  #conferenceRoster { max-height: 64px; }
+  .conference-composer { padding: 12px; margin-bottom: 12px; }
+  #conferenceMentionHelp { margin-bottom: 8px; }
+}

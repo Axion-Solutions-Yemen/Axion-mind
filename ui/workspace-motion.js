@@ -1,43 +1,101 @@
-/* Container-level motion only. Never observe streamed markdown mutations. */
-(function (root, factory) {
-  const api = factory(root);
-  if (typeof module === 'object' && module.exports) module.exports = api;
-  else {
-    root.AxionMotion = api;
-    const boot = () => {
-      ['.sidebar', '.chat-header', '.chat-input-wrapper'].forEach((selector, i) => {
-        api.enter(document.querySelector(selector), { delay: i * 45, duration: 380 });
-      });
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
-    else boot();
+/* Presentation only: transient motion never owns navigation, requests, or stored data. */
+(function (root) {
+  'use strict';
+  const document = root.document;
+  if (!document) return;
+  const reducedMotion = root.matchMedia('(prefers-reduced-motion: reduce)');
+  const easing = 'cubic-bezier(.22, 1, .36, 1)';
+  const running = new Map();
+  let navigationRevision = 0;
+  let themeTimer;
+
+  function cancel(element) {
+    const animation = running.get(element);
+    running.delete(element);
+    animation?.cancel();
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
-  const running = new WeakMap();
-  const active = new Set();
-  let preference;
-  function observePreference() {
-    if (preference || !root.matchMedia) return;
-    preference = root.matchMedia('(prefers-reduced-motion: reduce)');
-    preference.addEventListener?.('change', event => {
-      if (event.matches) { for (const animation of active) animation.cancel(); active.clear(); }
-    });
+  function play(element, frames, options = {}) {
+    if (!element?.isConnected || reducedMotion.matches || typeof element.animate !== 'function') return null;
+    cancel(element);
+    try {
+      const animation = element.animate(frames, { duration: 180, easing, ...options });
+      running.set(element, animation);
+      const release = () => { if (running.get(element) === animation) running.delete(element); };
+      animation.addEventListener('finish', release, { once: true });
+      animation.addEventListener('cancel', release, { once: true });
+      return animation;
+    } catch (_) {
+      return null; // The natural layout and all controls remain usable without animation.
+    }
   }
-  function enter(element, options = {}) {
-    if (!element || typeof element.animate !== 'function') return null;
-    observePreference();
-    const previous = running.get(element);
-    if (previous) { previous.cancel(); active.delete(previous); running.delete(element); }
-    if (root.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return null;
-    const animation = element.animate([
-      { opacity: .65, transform: 'translateY(5px)' },
+  // Legacy callers remain inert unless a real interaction explicitly opts in.
+  function enter(element, { kind, distance = 6, duration = 180 } = {}) {
+    if (!['message', 'response', 'navigation'].includes(kind)) return null;
+    return play(element, [
+      { opacity: kind === 'navigation' ? .7 : 0, transform: `translateY(${distance}px)` },
       { opacity: 1, transform: 'translateY(0)' }
-    ], { duration: options.duration || 240, delay: options.delay || 0, easing: 'cubic-bezier(.16,1,.3,1)' });
-    running.set(element, animation);
-    active.add(animation);
-    const cleanup = () => { active.delete(animation); if (running.get(element) === animation) running.delete(element); };
-    animation.finished.then(cleanup, cleanup);
-    return animation;
+    ], { duration });
   }
-  return { enter };
-});
+  function cancelConversation() {
+    for (const element of [...running.keys()]) {
+      if (element.closest('.conversation-body')) cancel(element);
+    }
+  }
+  function captureComposer(transcript) {
+    cancelConversation();
+    if (reducedMotion.matches || !transcript.querySelector(':scope > .conversation-welcome:only-child')) return null;
+    const element = transcript.parentElement.querySelector('.chat-input-wrapper');
+    if (!element?.getClientRects().length) return null;
+    return { element, before: element.getBoundingClientRect() };
+  }
+  function settleComposer(snapshot) {
+    if (!snapshot || reducedMotion.matches || !snapshot.element.isConnected) return;
+    const { element, before } = snapshot;
+    const after = element.getBoundingClientRect();
+    const x = before.left - after.left, y = before.top - after.top;
+    if (Math.abs(x) + Math.abs(y) < 1) return;
+    play(element, [
+      { transform: `translate(${x}px, ${y}px)` },
+      { transform: 'translate(0, 0)' }
+    ], { duration: 440 });
+  }
+  function reset() {
+    navigationRevision += 1;
+    for (const element of [...running.keys()]) cancel(element);
+  }
+  root.addEventListener('resize', reset, { passive: true });
+  reducedMotion.addEventListener('change', reset);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) reset(); });
+  new MutationObserver(() => {
+    reset();
+    root.clearTimeout(themeTimer);
+    if (reducedMotion.matches) return;
+    document.documentElement.classList.add('is-theme-changing');
+    themeTimer = root.setTimeout(() => document.documentElement.classList.remove('is-theme-changing'), 200);
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  reducedMotion.addEventListener('change', () => {
+    root.clearTimeout(themeTimer);
+    document.documentElement.classList.remove('is-theme-changing');
+  });
+
+  // Selection feedback follows explicit clicks, never background sidebar refreshes.
+  document.addEventListener('click', event => {
+    const control = event.target.closest?.('#tabPersonas, #tabHermes, .persona-navigation-item, .sub-session-item');
+    if (!control || reducedMotion.matches) return;
+    cancelConversation();
+    const revision = ++navigationRevision;
+    const key = control.dataset.navigationKey;
+    const isPersona = control.matches('.persona-navigation-item');
+    root.requestAnimationFrame(() => {
+      if (revision !== navigationRevision || reducedMotion.matches) return;
+      const target = isPersona ? document.getElementById('selectedPersonaSelector') : key
+        ? [...document.querySelectorAll('[data-navigation-key]')].find(item => item.dataset.navigationKey === key)
+        : control;
+      if (target?.getClientRects().length) enter(target, { kind: 'navigation', distance: 0, duration: 180 });
+    });
+  }, true);
+
+  const api = { enter, play, captureComposer, settleComposer, cancelConversation };
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.AxionMotion = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);

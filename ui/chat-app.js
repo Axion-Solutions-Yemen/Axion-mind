@@ -1,3 +1,4 @@
+    const workspaceUI = window.AxionPresentation;
 
     // Fallback seed personas so UI renders immediately even before IPC resolves
     const defaultSeedPersonas = [
@@ -42,13 +43,12 @@
     // State
     let personas = defaultSeedPersonas;
     let hermesSessions = [];
-    let agentSessionsMap = {
-      'alex-hormozi': [{ id: 'alex-hormozi_original', agent_id: 'alex-hormozi', title: 'Startup & Offers (Historical)', created_at: '', last_activity_at: '', message_count: 12 }]
-    };
+    let agentSessionsMap = {};
     let activeMode = 'persona'; // 'session' | 'persona'
-    let activeId = 'alex-hormozi_original';
-    let activeAgentId = 'alex-hormozi'; // default agent
-    let expandedAgents = new Set(['hermes', 'alex-hormozi', 'tech-architect', 'marketing-explorer', 'research-analyst']); // Expanded by default so sessions are always visible
+    let activeId = null;
+    let activeAgentId = null;
+    let selectedPersonaId = null;
+    const expandedAgents = new Set(['hermes']); // Per-Agent history disclosure preferences.
     let expandedSessionsAgents = new Set();
     let activeSidebarTab = 'personas';
     let showAdvancedModels = false;
@@ -71,12 +71,234 @@
     const btnSendEl = document.getElementById('btnSend');
     const btnStopEl = document.getElementById('btnStop');
     const btnScrollBottomEl = document.getElementById('btnScrollBottom');
-    const mindStatusEl = document.getElementById('mindStatus');
     const personaModalEl = document.getElementById('personaModal');
     const btnClearChatEl = document.getElementById('btnClearChat');
     const btnEditPersonaEl = document.getElementById('btnEditPersona');
     const btnDeletePersonaEl = document.getElementById('btnDeletePersona');
     const btnToggleAllThinkingEl = document.getElementById('btnToggleAllThinking');
+
+    // Theme changes only presentation; the current document remains mounted.
+    const themeToggleEl = document.getElementById('btnToggleTheme');
+    themeToggleEl.onclick = () => {
+      const rootEl = document.documentElement;
+      rootEl.dataset.theme = rootEl.dataset.theme === 'light' ? 'dark' : 'light';
+      const actionLabel = rootEl.dataset.theme === 'dark' ? 'Switch to Light theme' : 'Switch to Dark theme';
+      themeToggleEl.setAttribute('aria-label', actionLabel);
+      themeToggleEl.title = actionLabel;
+    };
+
+    // Floating workspace controls own presentation and focus only.
+    function bindAnchoredSurface(trigger, panel, { initialFocus, items = 'button:not(:disabled)', align = 'start', duration = 180, stagger = 0 } = {}) {
+      document.body.appendChild(panel);
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      let open = false, animation;
+      let rowAnimations = [];
+      function position() {
+        if (!open) return;
+        if (!trigger.getClientRects().length) { close({ restoreFocus: false }); return; }
+        const rect = trigger.getBoundingClientRect();
+        const gap = 8, edge = 12;
+        const below = window.innerHeight - rect.bottom - gap - edge;
+        const above = rect.top - gap - edge;
+        const placeAbove = below < 160 && above > below;
+        panel.style.maxHeight = `${Math.max(0, Math.min(440, placeAbove ? above : below))}px`;
+        const size = panel.getBoundingClientRect();
+        const left = align === 'end' ? rect.right - size.width : rect.left;
+        panel.style.left = `${Math.max(edge, Math.min(left, window.innerWidth - size.width - edge))}px`;
+        panel.style.top = `${Math.max(edge, placeAbove ? rect.top - gap - size.height : rect.bottom + gap)}px`;
+      }
+      function motion(show) {
+        const style = animation?.playState === 'running' ? getComputedStyle(panel) : null;
+        const from = style ? { opacity: style.opacity, transform: style.transform } : null;
+        const previous = animation;
+        animation = null;
+        previous?.cancel();
+        rowAnimations.forEach(row => row.cancel());
+        rowAnimations = [];
+        if (reducedMotion.matches) { panel.hidden = !show; return; }
+        const current = window.AxionMotion.play(panel, show
+          ? [from || { opacity: 0, transform: 'translateY(-5px)' }, { opacity: 1, transform: 'translateY(0)' }]
+          : [from || { opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-4px)' }],
+        { duration: show ? duration : Math.max(150, duration - 20) });
+        animation = current;
+        if (!current) { panel.hidden = !show; return; }
+        const finish = () => { if (animation === current && !open) panel.hidden = true; };
+        current.addEventListener('finish', finish, { once: true });
+        current.addEventListener('cancel', finish, { once: true });
+        if (show && stagger) rowAnimations = [...panel.querySelectorAll(items)]
+          .filter(row => row.getClientRects().length).map((row, index) => window.AxionMotion.play(row, [
+            { opacity: 0, transform: 'translateY(3px)' }, { opacity: 1, transform: 'translateY(0)' }
+          ], { duration: 140, delay: Math.min(index * stagger, 60), fill: 'backwards' })).filter(Boolean);
+      }
+      function show() {
+        if (open) return;
+        open = true;
+        panel.hidden = false;
+        panel.inert = false;
+        trigger.setAttribute('aria-expanded', 'true');
+        position();
+        if (!open) return;
+        motion(true);
+        const first = initialFocus?.() || [...panel.querySelectorAll(items)].find(el => el.getClientRects().length && !el.disabled) || panel.querySelector('[data-close-surface]');
+        first?.focus({ preventScroll: true });
+        if (first && !panel.contains(searchPersonasEl)) first.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+      function close({ restoreFocus = true } = {}) {
+        if (!open) return;
+        open = false;
+        panel.inert = true;
+        trigger.setAttribute('aria-expanded', 'false');
+        motion(false);
+        if (restoreFocus && trigger.isConnected) trigger.focus({ preventScroll: true });
+      }
+      trigger.onclick = () => open ? close() : show();
+      trigger.addEventListener('keydown', event => {
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          if (open) [...panel.querySelectorAll(items)].find(el => el.getClientRects().length && !el.disabled)?.focus();
+          else show();
+        } else if (event.key === 'Escape' && open) { event.preventDefault(); event.stopPropagation(); close(); }
+      });
+      panel.addEventListener('click', event => {
+        if (event.target.closest('[data-close-surface]')) close();
+      });
+      panel.addEventListener('keydown', event => {
+        if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return; }
+        if (panel.contains(searchPersonasEl)) return;
+        if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+        const choices = [...panel.querySelectorAll(items)].filter(el => el.getClientRects().length && !el.disabled);
+        if (!choices.length) return;
+        event.preventDefault();
+        const current = choices.indexOf(document.activeElement);
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? choices.length - 1
+          : current < 0 ? (event.key === 'ArrowDown' ? 0 : choices.length - 1)
+          : (current + (event.key === 'ArrowDown' ? 1 : choices.length - 1)) % choices.length;
+        choices[next].focus({ preventScroll: false });
+      });
+      document.addEventListener('pointerdown', event => {
+        if (open && !panel.contains(event.target) && !trigger.contains(event.target)) close({ restoreFocus: panel.contains(document.activeElement) });
+      }, true);
+      document.addEventListener('focusin', event => {
+        if (open && event.target !== document.body && !panel.contains(event.target) && !trigger.contains(event.target)) close({ restoreFocus: false });
+      });
+      window.addEventListener('resize', position);
+      document.addEventListener('scroll', event => { if (open && !panel.contains(event.target)) position(); }, true);
+      reducedMotion.addEventListener('change', () => {
+        if (reducedMotion.matches) { animation?.cancel(); rowAnimations.forEach(row => row.cancel()); panel.hidden = !open; }
+      });
+      return { close };
+    }
+
+    const personaSelectorEl = document.getElementById('selectedPersonaSelector');
+    const personaOptionsEl = document.getElementById('personaSelectorOptions');
+    const personaSurface = bindAnchoredSurface(personaSelectorEl, document.getElementById('personaSelectorPopover'), {
+      initialFocus: () => personaOptionsEl.querySelector('[aria-pressed="true"]'), items: '.persona-navigation-item'
+    });
+    bindAnchoredSurface(document.getElementById('btnSearchConversations'), document.getElementById('conversationSearchPopover'), {
+      initialFocus: () => searchPersonasEl, duration: 180
+    });
+    document.getElementById('btnClearConversationSearch').onclick = () => {
+      searchPersonasEl.value = '';
+      renderUnifiedSidebar();
+      searchPersonasEl.focus();
+    };
+    const chatOverflowSurface = bindAnchoredSurface(document.getElementById('btnChatOverflowMenu'), document.getElementById('chatOverflowDropdown'), {
+      items: '[role="menuitem"]', align: 'end'
+    });
+    document.getElementById('chatOverflowDropdown').addEventListener('click', event => {
+      if (event.target.closest('[role="menuitem"]')) chatOverflowSurface.close();
+    }, true);
+
+    const userMenuEl = document.getElementById('userUtilityMenu');
+    const userMenuSurface = bindAnchoredSurface(document.getElementById('btnOpenAuthModal'), userMenuEl, {
+      items: '[role="menuitem"]', duration: 180, stagger: 12
+    });
+    userMenuEl.addEventListener('click', event => {
+      if (event.target.closest('[role="menuitem"]:not(:disabled)')) userMenuSurface.close();
+    }, true);
+
+    function setControlBusy(control, busy) {
+      control.disabled = busy;
+      control.setAttribute('aria-busy', String(busy));
+    }
+
+    function setInterfaceFeedback(element, name, text) {
+      element.classList.add('interface-feedback');
+      const glyph = document.createElement('span');
+      glyph.innerHTML = workspaceUI.icon(name);
+      const label = document.createElement('span');
+      label.textContent = text;
+      element.replaceChildren(glyph, label);
+    }
+
+    const thinkingPreferences = new Map();
+    const initializedDisclosures = new WeakMap();
+    function thinkingConversationKey() { return JSON.stringify([activeMode, activeId]); }
+    function thinkingState() {
+      const key = thinkingConversationKey();
+      if (!thinkingPreferences.has(key)) thinkingPreferences.set(key, { defaultExpanded: undefined, disclosures: new Map() });
+      return thinkingPreferences.get(key);
+    }
+    function displayedDisclosures() {
+      const key = thinkingConversationKey();
+      const rows = [...messagesContainerEl.querySelectorAll('.message-row')].filter(row => row.dataset.conversationKey === key);
+      return rows.flatMap((row, rowIndex) => [...row.querySelectorAll('.thinking-accordion')]
+        .map((panel, index) => ({ panel, id: `${rowIndex}:${index}` })).filter(({ panel }) => !panel.hidden));
+    }
+    function disclosureOpen(panel) { return panel.matches('details') ? panel.open : panel.classList.contains('open'); }
+    function setDisclosureOpen(panel, expanded) {
+      if (disclosureOpen(panel) !== expanded) {
+        if (panel.matches('details')) panel.open = expanded;
+        else panel.classList.toggle('open', expanded);
+      }
+      if (!panel.matches('details')) panel.querySelector('.thinking-header')?.setAttribute('aria-expanded', String(expanded));
+    }
+    function refreshThinkingControl() {
+      const entries = displayedDisclosures();
+      const state = thinkingState();
+      const key = thinkingConversationKey();
+      for (const { panel, id } of entries) {
+        if (initializedDisclosures.get(panel) !== key) {
+          const remembered = state.disclosures.has(id) ? state.disclosures.get(id) : state.defaultExpanded;
+          if (typeof remembered === 'boolean') setDisclosureOpen(panel, remembered);
+          initializedDisclosures.set(panel, key);
+        }
+        state.disclosures.set(id, disclosureOpen(panel));
+        if (!panel.matches('details')) panel.querySelector('.thinking-header')?.setAttribute('aria-expanded', String(disclosureOpen(panel)));
+      }
+      const anyOpen = entries.some(({ panel }) => disclosureOpen(panel));
+      const available = entries.length > 0;
+      const activeConversation = Boolean(activeId && activeMode !== 'conference' &&
+        !messagesContainerEl.querySelector(':scope > .conversation-welcome'));
+      const label = anyOpen ? 'Hide Thinking' : 'Show Thinking';
+      const showControl = activeConversation && available;
+      btnToggleAllThinkingEl.hidden = !showControl;
+      document.getElementById('transcriptToolbar').hidden = !showControl;
+      btnToggleAllThinkingEl.setAttribute('aria-pressed', String(anyOpen));
+      btnToggleAllThinkingEl.title = label + ': reasoning and tool disclosures in this conversation';
+      document.getElementById('thinkingChipLabel').textContent = label;
+    }
+    btnToggleAllThinkingEl.onclick = () => {
+      const entries = displayedDisclosures();
+      if (!entries.length) return;
+      const expanded = !entries.some(({ panel }) => disclosureOpen(panel));
+      const state = thinkingState();
+      state.defaultExpanded = expanded;
+      state.disclosures.clear();
+      for (const { panel, id } of entries) {
+        setDisclosureOpen(panel, expanded);
+        state.disclosures.set(id, expanded);
+      }
+      refreshThinkingControl();
+    };
+    // Observe transcript rows and disclosure state; streamed text does not drive this UI.
+    new MutationObserver(records => {
+      const relevant = records.some(record => record.type === 'attributes'
+        ? record.target.matches('.thinking-accordion')
+        : [...record.addedNodes, ...record.removedNodes].some(node => node.nodeType === 1 &&
+          (node.matches('.message-row, .conversation-welcome, .thinking-accordion') || node.querySelector('.thinking-accordion'))));
+      if (relevant) refreshThinkingControl();
+    }).observe(messagesContainerEl, { childList: true, subtree: true, attributes: true, attributeFilter: ['open', 'class', 'hidden'] });
 
     // Init
     async function init() {
@@ -113,20 +335,13 @@
         console.error("fetchHermesSessions error:", e);
       }
       renderUnifiedSidebar();
-      if (!activeId) {
-        // Auto-select first persona session or default persona
-        if (personas.length > 0) {
-          const firstPersona = personas[0];
-          const sessions = agentSessionsMap[firstPersona.id] || [];
-          if (sessions.length > 0) {
-            selectItem('persona', sessions[0].id);
-          } else {
-            selectItem('persona', firstPersona.id);
-          }
-        } else if (hermesSessions.length > 0) {
-          selectItem('session', hermesSessions[0].id);
-        }
-      }
+      if (activeMode === 'conference') return;
+      if (!activeId || !conversationOwner(activeMode, activeId)) {
+        const firstPersona = personas.find(persona => (agentSessionsMap[persona.id] || []).length) || personas[0];
+        if (firstPersona) await activatePersona(firstPersona);
+        else if (hermesSessions.length) await selectItem('session', datedEntries(hermesSessions, hermesIdentity())[0].session.id);
+        else showEmptyConversation(null);
+      } else updateConversationIdentity(conversationOwner(activeMode, activeId), activeMode);
     }
 
     // Native IPC Bridge for Tauri v2
@@ -160,16 +375,10 @@
       throw new Error('Tauri IPC not ready: ' + cmd);
     };
 
-    // Health check
+    // Keep the existing health probe without a visible workspace status component.
     async function checkMindStatus() {
-      try {
-        const sessions = await invoke('get_hermes_sessions');
-        mindStatusEl.className = 'status-badge';
-        mindStatusEl.innerHTML = '<span class="status-dot"></span><span>Online</span>';
-      } catch (e) {
-        mindStatusEl.className = 'status-badge offline';
-        mindStatusEl.innerHTML = '<span class="status-dot offline" style="background: #ef4444;"></span><span style="color: #ef4444;">Offline</span>';
-      }
+      try { await invoke('get_hermes_sessions'); }
+      catch (error) { console.debug('Hermes health check unavailable:', error); }
     }
 
     // Load personas and their sessions
@@ -205,109 +414,124 @@
       } catch (e) {
         console.error("Failed to load Hermes sessions via Tauri IPC:", e);
         // Visual indicator in sidebar if error occurs
-        const sHeader = document.querySelector('#personasList .sidebar-section-title:last-of-type');
-        if (sHeader) {
-          sHeader.innerHTML = `<span>Hermes Sessions</span><span class="count-badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">ERR</span>`;
+        if (activeSidebarTab === 'hermes' && !document.getElementById('hermesSessionError')) {
+          const status = document.createElement('p');
+          status.id = 'hermesSessionError';
+          status.className = 'navigation-empty';
+          status.setAttribute('role', 'status');
+          status.textContent = 'Hermes sessions unavailable.';
+          personasListEl.appendChild(status);
         }
       }
     }
 
-    // Render Unified Sidebar: Hierarchy of Agents, each holding its own sessions
+    // Navigation reads existing collections; selecting a Persona leaves the transcript mounted.
     function renderUnifiedSidebar() {
       const filter = searchPersonasEl.value.toLowerCase().trim();
+      document.getElementById('navigationPanelTitle').textContent = activeSidebarTab === 'hermes' ? 'Personal Agent' : 'Agents';
+      document.getElementById('tabPersonas').setAttribute('aria-pressed', String(activeSidebarTab === 'personas'));
+      document.getElementById('tabHermes').setAttribute('aria-pressed', String(activeSidebarTab === 'hermes'));
 
-      personasListEl.innerHTML = '';
-
-      // Define default Hermes agent representing native CLI/Telegram/Mind sessions
       const hermesAgent = {
         id: 'hermes',
         name: 'Hermes (Personal Agent)',
-        title: 'Autonomous System Agent & CLI/Telegram Engine',
         avatar: '⚡',
-        emoji: '⚡',
-        description: 'Personal Hermes agent executing system commands, terminal, and live sessions.',
-        model: 'antigravity-gemini-3.8-flash',
-        isDefaultHermes: true,
+        isDefaultHermes: true
       };
+      const allAgents = [hermesAgent, ...personas];
+      const sessionsFor = agent => agent.isDefaultHermes ? hermesSessions : (agentSessionsMap[agent.id] || []);
+      const matchesAgent = agent => [agent.name, agent.title].some(value => String(value || '').toLowerCase().includes(filter));
+      const matchesSession = session => [session.title, session.id].some(value => String(value || '').toLowerCase().includes(filter));
+      const navigationRoots = [personasListEl, personaOptionsEl];
+      const previousScroll = new Map(navigationRoots.flatMap(root => [...root.querySelectorAll('[data-navigation-scroll]')])
+        .map(el => [el.dataset.navigationScroll, el.scrollTop]));
+      const focusedControl = navigationRoots.some(root => root.contains(document.activeElement)) ? document.activeElement.dataset.navigationKey : null;
+      const optionsScroll = personaOptionsEl.scrollTop;
+      personasListEl.replaceChildren();
 
-      // Tab segmentation: In search mode, search both. Otherwise, show current tab
-      let allAgents = [];
-      if (filter.length > 0) {
-        allAgents = [hermesAgent, ...personas];
-      } else if (activeSidebarTab === 'hermes') {
-        allAgents = [hermesAgent];
-      } else {
-        allAgents = personas;
+      let selectedAgent = activeSidebarTab === 'hermes' ? hermesAgent : personas.find(agent => agent.id === selectedPersonaId);
+      if (!selectedAgent) {
+        selectedAgent = personas.find(agent => agent.id === activeAgentId) || personas[0];
+        selectedPersonaId = selectedAgent?.id || null;
+        if (selectedAgent) expandedAgents.add(selectedAgent.id);
+      }
+      personaSelectorEl.hidden = activeSidebarTab === 'hermes';
+      document.getElementById('hermesNavigationContext').hidden = activeSidebarTab !== 'hermes';
+      document.getElementById('selectedPersonaIdentity').innerHTML = `<span class="agent-avatar">${workspaceUI.avatar(selectedAgent)}</span><span class="agent-name">${escapeHtml(selectedAgent?.name || 'Select Persona')}</span>`;
+      personaSelectorEl.title = selectedAgent?.name || 'Select Persona';
+      personaSelectorEl.setAttribute('aria-label', `Choose Persona: ${selectedAgent?.name || 'none selected'}`);
+      document.getElementById('btnClearConversationSearch').hidden = searchPersonasEl.value.length === 0;
+      const searchTrigger = document.getElementById('btnSearchConversations');
+      searchTrigger.classList.toggle('is-filtered', Boolean(filter));
+      searchTrigger.title = filter ? 'Search conversations · Filter active' : 'Search Personas and conversations';
+      searchTrigger.setAttribute('aria-label', searchTrigger.title);
+      personaOptionsEl.replaceChildren();
+      for (const agent of personas) {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = `agent-card-header persona-navigation-item${selectedAgent?.id === agent.id ? ' is-selected' : ''}`;
+        row.dataset.navigationKey = `persona:${agent.id}`;
+        row.setAttribute('aria-pressed', String(selectedAgent?.id === agent.id));
+        row.title = agent.name;
+        row.innerHTML = `<span class="agent-avatar">${workspaceUI.avatar(agent)}</span><span class="agent-name">${escapeHtml(agent.name)}</span>`;
+        row.onclick = () => {
+          selectedPersonaId = agent.id;
+          expandedAgents.add(agent.id);
+          personaSurface.close();
+          if (activeSidebarTab !== 'personas') document.getElementById('tabPersonas').click();
+          activatePersona(agent);
+        };
+        personaOptionsEl.appendChild(row);
+      }
+      if (!personas.length) {
+        const empty = document.createElement('p');
+        empty.className = 'navigation-empty';
+        empty.textContent = 'No Personas available.';
+        personaOptionsEl.appendChild(empty);
+      }
+      personaOptionsEl.scrollTop = optionsScroll;
+      if (selectedAgent) renderPersonaHistory(selectedAgent);
+
+      for (const el of navigationRoots.flatMap(root => [...root.querySelectorAll('[data-navigation-scroll]')])) {
+        el.scrollTop = previousScroll.get(el.dataset.navigationScroll) || 0;
+      }
+      if (focusedControl) {
+        navigationRoots.flatMap(root => [...root.querySelectorAll('[data-navigation-key]')])
+          .find(el => el.dataset.navigationKey === focusedControl)?.focus({ preventScroll: true });
       }
 
-      // Section title
-      const header = document.createElement('div');
-      header.className = 'sidebar-section-title';
-      header.innerHTML = `<span>${activeSidebarTab === 'hermes' ? 'Personal Agent' : 'Personas'}</span><span class="count-badge">${allAgents.length}</span>`;
-      personasListEl.appendChild(header);
-
-      allAgents.forEach(agent => {
-        const isHermes = agent.isDefaultHermes || agent.id === 'hermes';
-        let agentSessions = [];
-
-        if (isHermes) {
-          agentSessions = hermesSessions;
-        } else {
-          agentSessions = agentSessionsMap[agent.id] || [];
-        }
-
-        // Apply filter
-        const matchesAgent = agent.name.toLowerCase().includes(filter) || (agent.title && agent.title.toLowerCase().includes(filter));
-        const filteredSessions = matchesAgent 
-          ? agentSessions 
-          : agentSessions.filter(s => (s.title && s.title.toLowerCase().includes(filter)) || (s.id && s.id.toLowerCase().includes(filter)));
-
-        if (!matchesAgent && filteredSessions.length === 0) {
-          return;
-        }
-
-        // Agent Card Accordion
-        const card = document.createElement('div');
-        const isExpanded = expandedAgents.has(agent.id) || filter.length > 0;
-        const isCurrentAgent = activeAgentId === agent.id;
-        card.className = `agent-card ${isExpanded ? 'expanded' : ''} ${isCurrentAgent ? 'active-agent' : ''}`;
-
-        // Header
-        const cardHeader = document.createElement('div');
-        cardHeader.className = 'agent-card-header';
-        cardHeader.onclick = (e) => {
-          if (e.target.closest('.agent-toggle') || e.target.closest('.agent-card-header')) {
-            if (expandedAgents.has(agent.id)) {
-              expandedAgents.delete(agent.id);
-            } else {
-              expandedAgents.add(agent.id);
-            }
-            card.classList.toggle('expanded', expandedAgents.has(agent.id));
-          }
+      function renderPersonaHistory(agent) {
+        const agentSessions = sessionsFor(agent);
+        const filteredSessions = agentSessions.filter(session => !filter || matchesAgent(agent) || matchesSession(session));
+        const history = document.createElement('section');
+        const isExpanded = expandedAgents.has(agent.id) || Boolean(filter);
+        history.className = `agent-card persona-history${isExpanded ? ' expanded' : ''}`;
+        history.setAttribute('aria-label', `${agent.name} conversations`);
+        const header = document.createElement('div');
+        header.className = 'persona-history-header';
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'history-toggle btn-ghost';
+        toggle.dataset.navigationKey = `history:${agent.id}`;
+        toggle.setAttribute('aria-expanded', String(isExpanded));
+        toggle.setAttribute('aria-controls', 'selectedPersonaHistory');
+        toggle.innerHTML = `<span>Conversations</span><span class="agent-toggle" aria-hidden="true">${workspaceUI.icon('chevron')}</span>`;
+        toggle.onclick = () => {
+          const open = history.classList.contains('expanded');
+          if (open) expandedAgents.delete(agent.id);
+          else expandedAgents.add(agent.id);
+          history.classList.add('is-disclosing');
+          body.inert = open;
+          history.classList.toggle('expanded', !open);
+          toggle.setAttribute('aria-expanded', String(!open));
         };
-
-        const avatarEmoji = agent.avatar || agent.emoji || '🤖';
-        cardHeader.innerHTML = `
-          <div class="agent-avatar">${escapeHtml(avatarEmoji)}</div>
-          <div class="agent-info">
-            <div class="agent-name-row">
-              <span class="agent-name">${escapeHtml(agent.name)}</span>
-              <span class="agent-sessions-count">${filteredSessions.length} sess</span>
-            </div>
-            <div class="agent-title">${escapeHtml(agent.title || agent.description || '')}</div>
-          </div>
-          <span class="agent-toggle">▼</span>
-        `;
-        card.appendChild(cardHeader);
-
-        // Sessions Container
-        const sessContainer = document.createElement('div');
-        sessContainer.className = 'agent-sessions-container';
-
-        // "New Session" button for each agent
-        const newChatBtn = document.createElement('div');
-        newChatBtn.className = 'btn-new-agent-chat';
-        newChatBtn.innerHTML = `<span>+ New ${escapeHtml(agent.name)} Session</span>`;
+        const newChatBtn = document.createElement('button');
+        newChatBtn.type = 'button';
+        newChatBtn.className = 'btn-new-agent-chat btn-ghost btn-icon';
+        newChatBtn.dataset.navigationKey = `new-session:${agent.id}`;
+        newChatBtn.innerHTML = workspaceUI.icon('plus');
+        newChatBtn.title = `New ${agent.name} Session`;
+        newChatBtn.setAttribute('aria-label', newChatBtn.title);
         newChatBtn.onclick = async (e) => {
           e.stopPropagation();
           const sessCount = (agentSessionsMap[agent.id]?.length || 0) + 1;
@@ -321,115 +545,256 @@
             agentSessionsMap[agent.id].unshift(newMeta);
             expandedAgents.add(agent.id);
             activeAgentId = agent.id;
+            selectedPersonaId = agent.id;
             selectItem('persona', newMeta.id);
           } catch (err) {
             alert('Failed to create new session: ' + err);
           }
         };
-        sessContainer.appendChild(newChatBtn);
-
-        // Session Capping: Render 5 by default with clean accordion
+        header.append(toggle, newChatBtn);
+        const body = document.createElement('div');
+        body.id = 'selectedPersonaHistory';
+        body.className = 'agent-sessions-container';
+        body.inert = !isExpanded;
+        body.dataset.navigationScroll = `history:${agent.id}`;
+        const entries = datedEntries(filteredSessions, agent);
         const MAX_INITIAL = 5;
-        const isShowAll = expandedSessionsAgents.has(agent.id) || filter.length > 0;
-        const visibleSessions = isShowAll ? filteredSessions : filteredSessions.slice(0, MAX_INITIAL);
-
-        visibleSessions.forEach(s => {
-          const isItemActive = isHermes ? (activeMode === 'session' && activeId === s.id) : (activeMode === 'persona' && activeId === s.id);
-          const item = document.createElement('div');
-          item.className = `sub-session-item ${isItemActive ? 'active' : ''}`;
-          item.onclick = (e) => {
-            e.stopPropagation();
-            activeAgentId = agent.id;
-            if (isHermes) {
-              selectItem('session', s.id);
-            } else {
-              selectItem('persona', s.id);
-            }
-          };
-
-          let icon = '💬';
-          if (s.source === 'telegram') icon = '📱';
-          else if (s.source === 'cli') icon = '💻';
-          else if (s.source === 'api_server') icon = '🌐';
-          else if (s.source === 'agent') icon = '⚡';
-
-          const timeStr = (s.last_activity_at || s.last_active) ? formatTimestamp(s.last_activity_at || s.last_active) : '';
-
-          item.innerHTML = `
-            <span class="sub-session-icon">${icon}</span>
-            <span class="sub-session-title">${escapeHtml(s.title || s.id)}</span>
-            ${timeStr ? `<span class="sub-session-time">${escapeHtml(timeStr)}</span>` : ''}
-          `;
-          sessContainer.appendChild(item);
-        });
-
-        if (filteredSessions.length > MAX_INITIAL && filter.length === 0) {
-          const toggleBtn = document.createElement('div');
-          toggleBtn.className = 'btn-show-more-sessions';
-          toggleBtn.style.cssText = 'padding: 6px 12px; font-size: 11px; color: var(--ax-primary); cursor: pointer; text-align: center; border-radius: 6px; margin: 4px 10px 8px; background: rgba(99, 102, 241, 0.08); transition: background 0.15s; font-weight: 500;';
-          toggleBtn.textContent = isShowAll 
-            ? '▲ Show fewer sessions' 
-            : `▼ ${filteredSessions.length - MAX_INITIAL} earlier sessions...`;
-          toggleBtn.onclick = (e) => {
-            e.stopPropagation();
-            if (expandedSessionsAgents.has(agent.id)) {
-              expandedSessionsAgents.delete(agent.id);
-            } else {
-              expandedSessionsAgents.add(agent.id);
-            }
+        const isShowAll = expandedSessionsAgents.has(agent.id) || Boolean(filter);
+        appendDateGroups(body, isShowAll ? entries : entries.slice(0, MAX_INITIAL), false);
+        if (!entries.length) {
+          const empty = document.createElement('p');
+          empty.className = 'navigation-empty';
+          empty.textContent = filter ? 'No matching conversations for this Persona.' : 'No conversations yet. Use + to start a session.';
+          body.appendChild(empty);
+        }
+        if (entries.length > MAX_INITIAL && !filter) {
+          const more = document.createElement('button');
+          more.type = 'button';
+          more.className = 'btn-show-more-sessions btn-ghost';
+          more.dataset.navigationKey = `more-sessions:${agent.id}`;
+          more.setAttribute('aria-expanded', String(isShowAll));
+          more.innerHTML = workspaceUI.icon(isShowAll ? 'arrow-up' : 'chevron') + (isShowAll
+            ? '<span>Show fewer sessions</span>'
+            : `<span>${entries.length - MAX_INITIAL} earlier sessions...</span>`);
+          more.onclick = () => {
+            if (expandedSessionsAgents.has(agent.id)) expandedSessionsAgents.delete(agent.id);
+            else expandedSessionsAgents.add(agent.id);
             renderUnifiedSidebar();
           };
-          sessContainer.appendChild(toggleBtn);
+          body.appendChild(more);
         }
+        // Cross-Persona search results stay distinct from the selected Persona's history.
+        if (filter) {
+          const otherMatches = allAgents.filter(other => other.id !== agent.id).flatMap(other =>
+            datedEntries(sessionsFor(other).filter(session => matchesAgent(other) || matchesSession(session)), other));
+          if (otherMatches.length) {
+            const results = document.createElement('section');
+            results.className = 'conversation-search-results';
+            results.setAttribute('aria-label', 'Other matching conversations');
+            const title = document.createElement('h3');
+            title.className = 'sidebar-section-title';
+            title.textContent = 'Other matching conversations';
+            results.appendChild(title);
+            appendDateGroups(results, sortDatedEntries(otherMatches.map((entry, index) => ({ ...entry, index }))), true);
+            body.appendChild(results);
+          }
+        }
+        history.append(header, body);
+        personasListEl.appendChild(history);
+      }
 
-        card.appendChild(sessContainer);
-        personasListEl.appendChild(card);
+      function appendDateGroups(container, entries, showOwner) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).getTime();
+        const groups = new Map();
+        for (const entry of entries) {
+          const date = entry.date;
+          const day = date ? new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime() : null;
+          if (!groups.has(day)) groups.set(day, []);
+          groups.get(day).push(entry);
+        }
+        for (const [day, group] of groups) {
+          const section = document.createElement('section');
+          section.className = 'conversation-date-group';
+          const heading = document.createElement('h3');
+          heading.className = 'conversation-date-heading';
+          heading.textContent = day === null ? 'Earlier / Undated' : day === today ? 'Today' : day === yesterday ? 'Yesterday'
+            : new Date(day).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+          section.setAttribute('aria-label', heading.textContent);
+          section.appendChild(heading);
+          for (const { session, agent, date } of group) {
+            const isHermes = Boolean(agent.isDefaultHermes);
+            const selected = activeId === session.id && activeMode === (isHermes ? 'session' : 'persona');
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = `sub-session-item${selected ? ' active' : ''}`;
+            item.dataset.navigationKey = `session:${agent.id}:${session.id}`;
+            if (selected) item.setAttribute('aria-current', 'true');
+            item.title = `${session.title || session.id}${showOwner ? ` · ${agent.name}` : ''}${date ? ` · ${date.toLocaleString()}` : ''}`;
+            item.innerHTML = `<span class="sub-session-icon">${workspaceUI.sessionIcon(session.source)}</span>
+              <span class="session-label"><span class="sub-session-title">${escapeHtml(session.title || session.id)}</span>${showOwner ? `<span class="session-owner">${escapeHtml(agent.name)}</span>` : ''}</span>
+              ${date ? `<time class="sub-session-time" datetime="${date.toISOString()}">${escapeHtml(formatTimestamp(date))}</time>` : ''}`;
+            item.onclick = (e) => {
+              e.stopPropagation();
+              activeAgentId = agent.id;
+              selectedPersonaId = agent.id;
+              selectItem(isHermes ? 'session' : 'persona', session.id);
+            };
+            section.appendChild(item);
+          }
+          container.appendChild(section);
+        }
+      }
+    }
+
+    function parseSessionTimestamp(value) {
+      if (value === null || value === undefined || typeof value === 'boolean') return null;
+      const raw = typeof value === 'string' ? value.trim() : value;
+      if (raw === '') return null;
+      let date;
+      if (typeof raw === 'number' || (typeof raw === 'string' && /^[+-]?\d+(?:\.\d+)?$/.test(raw))) {
+        const numeric = Number(raw);
+        if (!Number.isFinite(numeric)) return null;
+        date = new Date(Math.abs(numeric) < 100000000000 ? numeric * 1000 : numeric);
+      } else if (typeof raw === 'string') {
+        const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[Tt ].*)?$/.exec(raw);
+        if (!iso) return null;
+        const year = Number(iso[1]), month = Number(iso[2]), day = Number(iso[3]);
+        if (month < 1 || month > 12 || day < 1 || day > new Date(Date.UTC(year, month, 0)).getUTCDate()) return null;
+        date = new Date(raw);
+      } else return null;
+      return Number.isFinite(date.getTime()) ? date : null;
+    }
+
+    function sessionDate(session) {
+      for (const value of [session.last_activity_at, session.last_active, session.updated_at, session.created_at]) {
+        const date = parseSessionTimestamp(value);
+        if (date) return date;
+      }
+      return null;
+    }
+
+    function sortDatedEntries(entries) {
+      return entries.sort((a, b) => {
+        if (!a.date) return b.date ? 1 : a.index - b.index;
+        if (!b.date) return -1;
+        return b.date.getTime() - a.date.getTime() || a.index - b.index;
       });
     }
 
-    function formatTimestamp(ts) {
-      if (!ts) return '';
-      const d = new Date(ts > 10000000000 ? ts : ts * 1000);
-      const now = new Date();
-      const diffSec = Math.floor((now - d) / 1000);
-      if (diffSec < 60) return 'just now';
-      if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
-      if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
-      return `${d.getMonth() + 1}/${d.getDate()}`;
+    function datedEntries(sessions, agent) {
+      return sortDatedEntries(sessions.map((session, index) => ({ session, agent, date: sessionDate(session), index })));
     }
 
-    // Switch active item (persona or native session)
-    async function selectItem(mode, id) {
+    function formatTimestamp(date) {
+      const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
+      if (diffSec >= 0 && diffSec < 60) return 'just now';
+      if (diffSec >= 0 && diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+      if (diffSec >= 0 && diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function hermesIdentity() {
+      return { id: 'hermes', name: 'Hermes (Personal Agent)', avatar: '⚡', title: 'Personal Agent' };
+    }
+
+    function conversationOwner(mode, id) {
+      if (!id) return null;
+      if (mode === 'session') {
+        const session = hermesSessions.find(item => item.id === id);
+        return session ? { persona: hermesIdentity(), session, isHermes: true } : null;
+      }
+      if (mode !== 'persona') return null;
+      for (const [collectionOwner, sessions] of Object.entries(agentSessionsMap)) {
+        const session = sessions.find(item => item.id === id);
+        if (!session) continue;
+        const ownerId = session.agent_id || collectionOwner;
+        const storedPersona = personas.find(item => item.id === ownerId);
+        const persona = storedPersona || (ownerId === 'hermes' ? hermesIdentity() : null);
+        return persona ? { persona, session, isHermes: !storedPersona && ownerId === 'hermes' } : null;
+      }
+      // Real Persona IDs remain compatible with existing legacy single-chat selection.
+      const persona = personas.find(item => item.id === id);
+      return persona ? { persona, session: null } : null;
+    }
+
+    function updateConversationIdentity(owner, mode) {
+      const persona = owner?.persona;
+      activePersonaAvatarEl.innerHTML = workspaceUI.avatar(persona);
+      activePersonaNameEl.textContent = persona?.name || 'Select a Persona';
+      activePersonaNameEl.title = activePersonaNameEl.textContent;
+      activePersonaTitleEl.textContent = mode === 'session' && owner?.session
+        ? `${owner.session.title || owner.session.id} · ${owner.session.source || 'cli'} · ${owner.session.model || 'hermes'}`
+        : persona?.title || persona?.description || 'Choose an Agent or Personal Agent to start';
+      activePersonaTitleEl.title = activePersonaTitleEl.textContent;
+      btnEditPersonaEl.style.display = mode === 'persona' && persona && !owner.isHermes ? 'flex' : 'none';
+      btnClearChatEl.style.display = mode === 'persona' && activeId ? 'flex' : 'none';
+    }
+
+    function showEmptyConversation(persona) {
+      window.AxionMotion.cancelConversation();
       window.AxionConferenceUI?.leave();
+      ++historyLoadEpoch;
+      activeMode = 'persona';
+      activeId = null;
+      activeAgentId = persona?.id || null;
+      selectedPersonaId = activeAgentId;
+      updateConversationIdentity(persona ? { persona, session: null } : null, 'persona');
+      refreshSendControl();
+      renderMessages([], 'persona', null);
+      refreshThinkingControl();
+      renderUnifiedSidebar();
+    }
+
+    async function reconcileConversationSelection() {
+      if (activeMode === 'conference') return;
+      const owner = conversationOwner(activeMode, activeId);
+      if (owner) {
+        updateConversationIdentity(owner, activeMode);
+        refreshSendControl();
+      }
+      else if (activeMode === 'persona') {
+        const persona = personas.find(item => item.id === activeAgentId || item.id === selectedPersonaId) || personas[0];
+        if (persona) await activatePersona(persona);
+        else showEmptyConversation(null);
+      }
+    }
+
+    async function activatePersona(persona) {
+      if (!persona) return;
+      selectedPersonaId = persona.id;
+      expandedAgents.add(persona.id);
+      const latest = datedEntries(agentSessionsMap[persona.id] || [], persona)
+        .find(entry => conversationOwner('persona', entry.session.id)?.persona.id === persona.id);
+      if (latest) await selectItem('persona', latest.session.id);
+      else showEmptyConversation(persona);
+    }
+
+    // Navigation never relabels an old transcript while the next history is loading.
+    async function selectItem(mode, id) {
+      const owner = conversationOwner(mode, id);
+      if (!owner) return;
+      window.AxionMotion.cancelConversation();
+      window.AxionConferenceUI?.leave();
+      const changed = activeMode !== mode || activeId !== id;
       activeMode = mode;
       activeId = id;
-
-      if (mode === 'persona') {
-        // Resolve agent from session_id (e.g. "alex-hormozi_original" -> "alex-hormozi")
-        const agentId = id.includes('_') ? id.substring(0, id.lastIndexOf('_')) : id;
-        const persona = personas.find(p => p.id === agentId || p.id === id);
-        if (persona) {
-          activeAgentId = persona.id;
-          activePersonaAvatarEl.textContent = persona.avatar || persona.emoji || '🤖';
-          activePersonaNameEl.textContent = persona.name;
-          activePersonaTitleEl.textContent = persona.title || persona.description || 'Agent';
-        }
-        btnEditPersonaEl.style.display = 'inline-block';
-        btnClearChatEl.style.display = 'inline-block';
-        renderUnifiedSidebar();
-        await loadMessages(id, 'persona');
-      } else {
-        activeAgentId = 'hermes';
-        const session = hermesSessions.find(s => s.id === id);
-        activePersonaAvatarEl.textContent = session?.source === 'telegram' ? '📱' : (session?.source === 'cli' ? '💻' : '⚡');
-        activePersonaNameEl.textContent = session?.title || session?.id || 'Hermes Session';
-        activePersonaTitleEl.textContent = `Hermes Agent (${session?.source || 'cli'}) • ${session?.model || 'hermes'}`;
-        btnEditPersonaEl.style.display = 'none';
-        btnClearChatEl.style.display = 'none';
-        renderUnifiedSidebar();
-        await loadMessages(id, 'session');
+      activeAgentId = owner.persona.id;
+      selectedPersonaId = owner.persona.id;
+      expandedAgents.add(owner.persona.id);
+      activeSidebarTab = owner.isHermes ? 'hermes' : 'personas';
+      document.getElementById('tabPersonas').classList.toggle('active', activeSidebarTab === 'personas');
+      document.getElementById('tabHermes').classList.toggle('active', activeSidebarTab === 'hermes');
+      if (changed) {
+        ++historyLoadEpoch;
+        messagesContainerEl.innerHTML = '<div class="empty-state" role="status"><p>Loading conversation…</p></div>';
       }
-
+      updateConversationIdentity(owner, mode);
+      refreshSendControl();
+      refreshThinkingControl();
+      renderUnifiedSidebar();
+      await loadMessages(id, mode);
       window.AxionMotion.enter(messagesContainerEl);
       if (activeMode !== mode || activeId !== id) return;
       document.getElementById('sidebar').classList.remove('open');
@@ -450,6 +815,10 @@
         renderMessages(messages, mode, id);
       } catch (e) {
         console.error("Failed to load chat history via Tauri IPC:", e);
+        if (epoch === historyLoadEpoch && activeId === id && activeMode === mode) {
+          messagesContainerEl.innerHTML = '<div class="empty-state" role="alert"><h3>Conversation unavailable</h3><p>Unable to load this conversation. Select it again to retry.</p></div>';
+          restoreLiveRequest(mode, id);
+        }
       }
     }
 
@@ -470,32 +839,22 @@
     function renderMessages(messages, mode, id) {
       queueMicrotask(() => { if (activeMode === mode && activeId === id) restoreLiveRequest(mode, id); });
       messagesContainerEl.innerHTML = '';
-      const persona = mode === 'persona' ? personas.find(p => p.id === id) : null;
+      const persona = mode === 'persona' ? (conversationOwner(mode, id)?.persona || (!id ? personas.find(p => p.id === activeAgentId) : null)) : null;
       const session = mode === 'session' ? hermesSessions.find(s => s.id === id) : null;
 
       if (!messages || messages.length === 0) {
         const emptyDiv = document.createElement('div');
-        emptyDiv.className = 'empty-state';
+        emptyDiv.className = 'empty-state conversation-welcome';
         if (mode === 'persona') {
+          emptyDiv.classList.add('persona-welcome');
           emptyDiv.innerHTML = `
-            <div class="big-emoji">${persona?.emoji || '🤖'}</div>
-            <h3>${escapeHtml(persona?.name || 'Agent')}</h3>
-            <p>${escapeHtml(persona?.description || 'Your private agent persona, powered directly by Hermes AI mind.')}</p>
-            <div class="starter-prompts">
-              <div class="starter-card" data-action="sendQuickPrompt" data-value="Give me your immediate executive diagnosis of my startup priorities.">
-                ⚡ <b>Startup Priorities:</b> Give me your immediate executive diagnosis...
-              </div>
-              <div class="starter-card" data-action="sendQuickPrompt" data-value="What is the single highest-leverage offer we can create this week?">
-                🎯 <b>Offer Strategy:</b> What is the single highest-leverage offer we can create...
-              </div>
-              <div class="starter-card" data-action="sendQuickPrompt" data-value="Review our execution architecture and point out any bottlenecks.">
-                🔍 <b>Architecture Review:</b> Review our execution architecture...
-              </div>
-            </div>
+            <div class="big-emoji">${workspaceUI.avatar(persona)}</div>
+            <h3>${escapeHtml(persona?.name || 'Choose a Persona')}</h3>
+            <p>${escapeHtml(persona?.description || (persona ? 'Create a new session to start a conversation.' : 'Select an Agent or Personal Agent to view its conversations.'))}</p>
           `;
         } else {
           emptyDiv.innerHTML = `
-            <div class="big-emoji">${session?.source === 'telegram' ? '📱' : '💻'}</div>
+            <div class="big-emoji">${workspaceUI.sessionIcon(session?.source)}</div>
             <h3>${escapeHtml(session?.title || session?.id || 'Hermes Session')}</h3>
             <p>Native Hermes session transcript. Type a message below to resume this conversation.</p>
           `;
@@ -514,35 +873,14 @@
     }
 
     function appendMessageRow(role, content, mode, tools, modelId, animate = false) {
-      const persona = mode === 'persona' ? personas.find(p => p.id === activeId) : null;
-      const session = mode === 'session' ? hermesSessions.find(s => s.id === activeId) : null;
       const row = document.createElement('div');
       row.className = `message-row ${role}`;
+      row.dataset.conversationKey = JSON.stringify([mode, activeId]);
       if (animate) row.classList.add('motion-new');
-
-      const avatar = document.createElement('div');
-      avatar.className = 'message-avatar';
-      if (role === 'user') {
-        avatar.textContent = '👤';
-      } else {
-        avatar.textContent = mode === 'persona' ? (persona?.emoji || '🤖') : (session?.source === 'telegram' ? '📱' : '⚡');
-      }
 
       const contentBox = document.createElement('div');
       contentBox.className = 'message-content';
 
-      // Explicit Model Badge on top of Assistant Turns for Transparency
-      if (role === 'assistant') {
-        const effectiveModel = modelId || currentChatModel;
-        if (effectiveModel) {
-          const badge = document.createElement('div');
-          badge.className = 'message-model-badge';
-          badge.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 12px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.22); color: #c7d2fe; margin-bottom: 8px; letter-spacing: 0.2px;';
-          badge.innerHTML = `<span>${getModelIcon ? getModelIcon(effectiveModel) : '⚡'}</span> <span class="model-badge-name">${escapeHtml(effectiveModel)}</span>`;
-          contentBox.appendChild(badge);
-        }
-      }
-      
       // If structured tools are present, render a single DeepSeek-style collapsible thinking accordion
       if (tools && tools.length > 0) {
         const accordion = document.createElement('div');
@@ -551,13 +889,19 @@
         const toolCount = tools.length;
         const banner = document.createElement('div');
         banner.className = 'thinking-header';
+        banner.setAttribute('role', 'button');
+        banner.tabIndex = 0;
+        banner.setAttribute('aria-expanded', 'false');
         banner.onclick = () => accordion.classList.toggle('open');
+        banner.onkeydown = event => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); banner.click(); }
+        };
         banner.innerHTML = `
           <div class="thinking-badge">
-            <span class="thinking-icon">🧠</span>
+            <span class="thinking-icon">${workspaceUI.icon('reasoning')}</span>
             <span>Thought (${toolCount} action${toolCount > 1 ? 's' : ''} executed)</span>
           </div>
-          <span class="thinking-toggle">▼</span>
+          <span class="thinking-toggle">${workspaceUI.icon('chevron')}</span>
         `;
         accordion.appendChild(banner);
 
@@ -574,16 +918,16 @@
           const card = document.createElement('div');
           card.className = 'tool-card';
           
-          let icon = '⚡';
-          if (t.name.includes('code') || t.name.includes('terminal')) icon = '💻';
-          else if (t.name.includes('file') || t.name.includes('patch')) icon = '📁';
-          else if (t.name.includes('search')) icon = '🔍';
-          else if (t.name.includes('vision')) icon = '👁️';
+          let icon = workspaceUI.icon('bolt');
+          if (t.name.includes('code') || t.name.includes('terminal')) icon = workspaceUI.icon('terminal');
+          else if (t.name.includes('file') || t.name.includes('patch')) icon = workspaceUI.icon('folder');
+          else if (t.name.includes('search')) icon = workspaceUI.icon('search');
+          else if (t.name.includes('vision')) icon = workspaceUI.icon('eye');
 
           card.innerHTML = `
             <div class="tool-card-header" data-action="toggleKnowledge">
               <span class="tool-card-title">${icon} <span>${escapeHtml(t.name)}</span></span>
-              <span class="tool-card-toggle">▼</span>
+              <span class="tool-card-toggle">${workspaceUI.icon('chevron')}</span>
             </div>
             <div class="tool-card-body">
               ${t.args ? `<div class="tool-section-label">Input / Arguments:</div><div>${escapeHtml(t.args)}</div>` : ''}
@@ -611,9 +955,9 @@
         contentBox.appendChild(textEl);
       }
 
-      row.appendChild(avatar);
       row.appendChild(contentBox);
       messagesContainerEl.appendChild(row);
+      if (animate && role === 'user') window.AxionMotion.enter(row, { kind: 'message', distance: 8, duration: 200 });
 
       row.querySelectorAll('pre code').forEach((block) => {
         hljs.highlightElement(block);
@@ -625,6 +969,14 @@
 
     function scrollToBottom() {
       messagesContainerEl.scrollTop = messagesContainerEl.scrollHeight;
+    }
+
+    // Reflect the existing send guards without owning the request lifecycle.
+    function refreshSendControl() {
+      const validContext = Boolean(activeId && (activeMode === 'persona' || activeMode === 'session') && conversationOwner(activeMode, activeId));
+      const unsavedResponse = [...pendingChatSaves.values()].some(request =>
+        request.origin.id === activeId && request.origin.mode === activeMode);
+      btnSendEl.disabled = !chatInputEl.value.trim() || !validContext || isStreaming || unsavedResponse;
     }
 
     // Send Message
@@ -643,6 +995,7 @@
       }
       const origin = { mode: activeMode, id: activeId, model: currentChatModel,
         name: activePersonaNameEl.textContent || 'Agent' };
+      const composerTransition = window.AxionMotion.captureComposer(messagesContainerEl);
       ++historyLoadEpoch; // A pending history load must never erase this new turn.
       chatInputEl.value = '';
       chatInputEl.style.height = 'auto';
@@ -656,8 +1009,10 @@
       request.settled = new Promise(resolve => { settleRequest = resolve; });
       activeChatRequest = request;
       isStreaming = true;
-      btnSendEl.style.display = 'none'; btnSendEl.disabled = false;
+      btnSendEl.style.display = 'none'; refreshSendControl();
       btnStopEl.style.display = 'flex'; btnStopEl.disabled = false;
+      refreshThinkingControl();
+      window.AxionMotion.settleComposer(composerTransition);
       const isOriginVisible = () => activeMode === origin.mode && activeId === origin.id && assistantContentBox.isConnected;
       const shouldRestoreFocus = () => isOriginVisible() && !document.querySelector('.modal-backdrop.open') &&
         (document.activeElement === chatInputEl || document.activeElement === btnStopEl || document.activeElement === btnSendEl || document.activeElement === document.body);
@@ -675,7 +1030,7 @@
           thinkingPanel.hidden = !raw; thinkingBody.textContent = raw;
           thinkingSummary.textContent = active ? 'Thinking…' : (request.stopped ? 'Thinking (interrupted)' : 'Thinking (complete)');
           thinkingBody.scrollTop = thinkingBody.scrollHeight;
-          if (isOriginVisible()) scrollToBottom();
+          if (isOriginVisible() && !scrollTracker.userHasScrolledUp) scrollTracker.scrollToBottom(messagesContainerEl);
         }
       });
       const responseTextEl = document.createElement('div'); responseTextEl.className = 'live-answer'; responseTextEl.dir = 'auto';
@@ -696,21 +1051,24 @@
       activeScrollTracker = scrollTracker;
       const streamCtrl = window.AxionStreamUX.createStreamController({
         onRender: (preparedMarkdown, meta) => {
-          if (isFirstToken && preparedMarkdown.length > 0) { isFirstToken = false; clearInterval(timerInterval); statusEl.remove(); }
+          if (isFirstToken && preparedMarkdown.length > 0) {
+            isFirstToken = false; clearInterval(timerInterval); statusEl.remove();
+            if (isOriginVisible()) window.AxionMotion.enter(responseTextEl, { kind: 'response', distance: 4, duration: 180 });
+          }
           let html = marked.parse(preparedMarkdown);
           if (meta.active) html += '<span class="streaming-cursor"></span>';
-          else if (request.stopped) html += '<div class="stream-stopped-badge">⏹ Stopped by user</div>';
+          else if (request.stopped) html += `<div class="stream-stopped-badge">${workspaceUI.icon('stop')} Stopped by user</div>`;
           responseTextEl.innerHTML = html;
           if (isOriginVisible()) {
-            scrollTracker.scrollToBottom(messagesContainerEl);
-            btnScrollBottomEl?.classList.remove('visible');
+            if (!scrollTracker.userHasScrolledUp) scrollTracker.scrollToBottom(messagesContainerEl);
+            btnScrollBottomEl?.classList.toggle('visible', scrollTracker.userHasScrolledUp);
           }
         },
         onDone: (finalRawText, interrupted) => {
           clearInterval(timerInterval); thinkingCtrl.complete(); statusEl.remove();
           responseTextEl.querySelectorAll('pre code').forEach(block => window.hljs?.highlightElement(block));
           attachCodeCopyButtons();
-          if (isOriginVisible()) scrollToBottom();
+          if (isOriginVisible() && !scrollTracker.userHasScrolledUp) scrollTracker.scrollToBottom(messagesContainerEl);
           request.savePromise = persist(finalRawText);
           // Attach a handler immediately; finally awaits the original promise and reports errors.
           request.savePromise.catch(() => {});
@@ -719,6 +1077,7 @@
       request.controller = streamCtrl; activeStreamController = streamCtrl; abortController = request.abort;
       request.stop = async () => {
         if (request.stopped || !streamCtrl.isActive()) return;
+        window.AxionMotion.cancelConversation();
         request.stopped = true; btnStopEl.disabled = true;
         streamCtrl.stop(); request.abort.abort();
         try { await invoke('cancel_chat_stream', { requestId: request.id }); }
@@ -790,13 +1149,13 @@
           pendingChatSaves.set(request.id, request);
           const el=document.createElement('div');el.className='stream-error';el.textContent='Response is not saved. Keep the app open. ';
           const retry=document.createElement('button');retry.type='button';retry.textContent='Retry saving';
-          retry.onclick=async()=>{retry.disabled=true;try {await persist(streamCtrl.getText());el.remove();}catch(e){retry.disabled=false;retry.textContent='Retry saving (still unavailable)';}};
+          retry.onclick=async()=>{retry.disabled=true;try {await persist(streamCtrl.getText());el.remove();}catch(e){retry.disabled=false;retry.textContent='Retry saving (still unavailable)';}finally {refreshSendControl();}};
           el.appendChild(retry);assistantContentBox.appendChild(el);
         }
         if (activeChatRequest === request) {
           const restoreFocus = shouldRestoreFocus();
           activeChatRequest = null; isStreaming = false; activeStreamController = null; abortController = null;
-          btnSendEl.style.display='flex'; btnSendEl.disabled=false;btnStopEl.style.display='none';btnStopEl.disabled=false;
+          btnSendEl.style.display='flex'; refreshSendControl();btnStopEl.style.display='none';btnStopEl.disabled=false;
           if (restoreFocus) chatInputEl.focus({preventScroll:true});
           settleRequest();
         }
@@ -805,6 +1164,7 @@
 
     function sendQuickPrompt(promptText) {
       chatInputEl.value = promptText;
+      refreshSendControl();
       sendMessage();
     }
 
@@ -855,7 +1215,7 @@
 
       playNotificationChime();
 
-      const title = `⚡ ${agentName || 'Axion Mind'} finished`;
+      const title = `${agentName || 'Axion Mind'} finished`;
       const body = cleanSnippet;
 
       // Prioritize native Windows WinRT toast via Rust IPC; avoid duplicate web notifications
@@ -887,16 +1247,15 @@
         const pre = codeBlock.parentElement;
         if (pre && !pre.querySelector('.btn-copy-code')) {
           const copyBtn = document.createElement('button');
-          copyBtn.className = 'btn-copy-code';
-          copyBtn.textContent = '📋 Copy';
-          copyBtn.style.cssText = 'position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #cbd5e1; font-size: 11px; padding: 3px 8px; cursor: pointer; transition: all 0.2s; z-index: 10;';
+          copyBtn.className = 'btn-copy-code btn-ghost btn-compact';
+          copyBtn.innerHTML = workspaceUI.icon('copy') + '<span>Copy</span>';
           copyBtn.onclick = () => {
             navigator.clipboard.writeText(codeBlock.innerText);
-            copyBtn.textContent = '✓ Copied!';
-            copyBtn.style.color = '#10b981';
+            copyBtn.innerHTML = workspaceUI.icon('check') + '<span>Copied!</span>';
+            copyBtn.style.color = 'var(--ax-success)';
             setTimeout(() => {
-              copyBtn.textContent = '📋 Copy';
-              copyBtn.style.color = '#cbd5e1';
+              copyBtn.innerHTML = workspaceUI.icon('copy') + '<span>Copy</span>';
+              copyBtn.style.color = 'var(--ax-text-secondary)';
             }, 2000);
           };
           pre.style.position = 'relative';
@@ -921,9 +1280,20 @@
       }
     };
 
+    function syncAvatarPresets() {
+      const value = document.getElementById('modalPersonaEmoji').value;
+      document.querySelectorAll('#personaModal .emoji-btn').forEach(button => {
+        const selected = button.dataset.value === value;
+        button.classList.toggle('selected', selected);
+        button.setAttribute('aria-pressed', String(selected));
+      });
+    }
+    document.getElementById('modalPersonaEmoji').addEventListener('input', syncAvatarPresets);
+
     // Modal logic
     function setModalEmoji(emoji) {
       document.getElementById('modalPersonaEmoji').value = emoji;
+      syncAvatarPresets();
     }
 
     document.getElementById('btnOpenNewPersonaModal').onclick = () => {
@@ -935,33 +1305,13 @@
       document.getElementById('modalPersonaEmoji').value = '🤖';
       document.getElementById('modalPersonaSystemPrompt').value = '';
       btnDeletePersonaEl.style.display = 'none';
+      syncAvatarPresets();
       personaModalEl.classList.add('open');
-    };
-
-    // Global toggle for all thinking blocks in view
-    btnToggleAllThinkingEl.onclick = () => {
-      const accordions = document.querySelectorAll('.thinking-accordion');
-      if (accordions.length === 0) return;
-      const anyOpen = Array.from(accordions).some(a => a.classList.contains('open'));
-      accordions.forEach(a => {
-        if (anyOpen) {
-          a.classList.remove('open');
-        } else {
-          a.classList.add('open');
-        }
-      });
-      const chipLabel = document.getElementById('thinkingChipLabel');
-      if (chipLabel) {
-        chipLabel.textContent = anyOpen ? 'Thinking: Hidden' : 'Thinking: Open';
-      }
-      btnToggleAllThinkingEl.style.borderColor = anyOpen ? 'var(--ax-border)' : 'var(--ax-primary)';
-      btnToggleAllThinkingEl.style.color = anyOpen ? 'var(--ax-text-muted)' : 'var(--ax-primary)';
     };
 
     btnEditPersonaEl.onclick = () => {
       if (activeMode !== 'persona') return;
-      const targetId = activeAgentId || (activeId && activeId.includes('_') ? activeId.substring(0, activeId.lastIndexOf('_')) : activeId);
-      const persona = personas.find(p => p.id === targetId || p.id === activeId || p.id === activeAgentId);
+      const persona = conversationOwner(activeMode, activeId)?.persona || personas.find(item => item.id === activeAgentId);
       if (!persona) return;
 
       document.getElementById('modalTitle').textContent = 'Edit Persona';
@@ -972,6 +1322,7 @@
       document.getElementById('modalPersonaEmoji').value = persona.avatar || persona.emoji || '🤖';
       document.getElementById('modalPersonaSystemPrompt').value = persona.system_prompt || '';
       btnDeletePersonaEl.style.display = 'block';
+      syncAvatarPresets();
       personaModalEl.classList.add('open');
     };
 
@@ -1029,7 +1380,7 @@
 
         for (const [providerName, items] of Object.entries(groups)) {
           const optgroup = document.createElement('optgroup');
-          optgroup.label = `⚡ ${providerName}`;
+          optgroup.label = providerName;
           items.forEach(m => {
             const opt = document.createElement('option');
             opt.value = m.id;
@@ -1045,17 +1396,17 @@
 
         // Add custom manual option
         const customGroup = document.createElement('optgroup');
-        customGroup.label = '🔧 Custom / Other';
+        customGroup.label = 'Custom / Other';
         const customOpt = document.createElement('option');
         customOpt.value = '__custom__';
-        customOpt.textContent = '✏️ Enter Custom Model...';
+        customOpt.textContent = 'Enter Custom Model...';
         customGroup.appendChild(customOpt);
         hermesModelSelectEl.appendChild(customGroup);
 
         if (!foundActive && activeModel) {
           const currentOpt = document.createElement('option');
           currentOpt.value = activeModel;
-          currentOpt.textContent = `★ ${activeModel} (Current Active)`;
+          currentOpt.textContent = `${activeModel} (Current Active)`;
           currentOpt.selected = true;
           hermesModelSelectEl.insertBefore(currentOpt, hermesModelSelectEl.firstChild);
         }
@@ -1066,10 +1417,10 @@
         }
 
         hermesModelStatusBadgeEl.textContent = `${modelList.length} AIs Connected`;
-        hermesModelStatusBadgeEl.style.color = '#10b981';
+        hermesModelStatusBadgeEl.style.color = 'var(--ax-success)';
       } catch (e) {
         hermesModelStatusBadgeEl.textContent = 'Detection error';
-        hermesModelStatusBadgeEl.style.color = '#ef4444';
+        hermesModelStatusBadgeEl.style.color = 'var(--ax-danger)';
         hermesConsoleOutputEl.textContent = `Error fetching connected models: ${e}`;
       }
     }
@@ -1137,8 +1488,31 @@
     let currentChatModel = 'antigravity-gemini-3.8-flash';
     const btnChatModelPicker = document.getElementById('btnChatModelPicker');
     const chatModelDropdownMenu = document.getElementById('chatModelDropdownMenu');
+    // Keep this viewport-anchored menu outside the composer's temporary FLIP transform.
+    document.body.appendChild(chatModelDropdownMenu);
     const chatModelPickerLabel = document.getElementById('chatModelPickerLabel');
     const chatModelPickerIcon = document.getElementById('chatModelPickerIcon');
+
+    // Keep the existing menu beside its trigger without clipping in a scroll region.
+    function positionChatModelMenu() {
+      if (chatModelDropdownMenu.style.display !== 'block') return;
+      const triggerBounds = btnChatModelPicker.getBoundingClientRect();
+      const viewportWidth = document.documentElement.clientWidth;
+      const viewportHeight = document.documentElement.clientHeight;
+      const menuWidth = Math.max(0, Math.min(384, viewportWidth - 32));
+      const triggerTop = Math.max(16, Math.min(triggerBounds.top, viewportHeight - 16));
+      const triggerBottom = Math.max(16, Math.min(triggerBounds.bottom, viewportHeight - 16));
+      const spaceAbove = Math.max(0, triggerTop - 24);
+      const spaceBelow = Math.max(0, viewportHeight - triggerBottom - 24);
+      const opensAbove = spaceAbove >= spaceBelow;
+      chatModelDropdownMenu.style.inlineSize = `${menuWidth}px`;
+      chatModelDropdownMenu.style.left = `${Math.max(16, Math.min(triggerBounds.left, viewportWidth - menuWidth - 16))}px`;
+      chatModelDropdownMenu.style.top = opensAbove ? 'auto' : `${triggerBottom + 8}px`;
+      chatModelDropdownMenu.style.bottom = opensAbove ? `${viewportHeight - triggerTop + 8}px` : 'auto';
+      chatModelDropdownMenu.style.maxBlockSize = `${Math.min(440, opensAbove ? spaceAbove : spaceBelow)}px`;
+    }
+    window.addEventListener('resize', positionChatModelMenu, { passive: true });
+    window.addEventListener('scroll', positionChatModelMenu, { capture: true, passive: true });
 
     function formatModelName(id) {
       if (!id) return 'Select Model';
@@ -1168,24 +1542,23 @@
     }
 
     function getModelIcon(modelId) {
-      if (!modelId) return '🤖';
+      if (!modelId) return workspaceUI.icon('model');
       const lower = modelId.toLowerCase();
-      if (lower.includes('claude') || lower.includes('sonnet') || lower.includes('opus')) return '🧠';
-      if (lower.includes('gemini') || lower.includes('argon') || lower.includes('flash')) return '⚡';
-      if (lower.includes('deepseek') || lower.includes('reasoner')) return '⚡';
-      if (lower.includes('gpt') || lower.includes('openai')) return '✨';
-      return '🤖';
+      if (lower.includes('claude') || lower.includes('sonnet') || lower.includes('opus')) return workspaceUI.icon('reasoning');
+      if (lower.includes('gemini') || lower.includes('argon') || lower.includes('flash')) return workspaceUI.icon('bolt');
+      if (lower.includes('deepseek') || lower.includes('reasoner')) return workspaceUI.icon('bolt');
+      return workspaceUI.icon('model');
     }
 
     function setChatModel(modelId, displayName) {
       currentChatModel = modelId;
       const formatted = displayName || formatModelName(modelId);
       chatModelPickerLabel.textContent = formatted;
-      chatModelPickerIcon.textContent = getModelIcon(modelId);
+      chatModelPickerIcon.innerHTML = getModelIcon(modelId);
 
       document.querySelectorAll('.chat-model-menu-item').forEach(el => {
         const isMatch = el.getAttribute('data-model') === modelId;
-        el.style.background = isMatch ? 'rgba(99, 102, 241, 0.2)' : 'transparent';
+        el.style.background = isMatch ? 'var(--ax-selected)' : 'transparent';
         const check = el.querySelector('.model-check');
         if (check) check.style.opacity = isMatch ? '1' : '0';
       });
@@ -1196,7 +1569,10 @@
         btn.style.color = isActive ? 'var(--ax-primary)' : 'var(--ax-text-muted)';
       });
 
+      const restoreModelFocus = chatModelDropdownMenu.contains(document.activeElement);
+      chatModelDropdownMenu.inert = true;
       chatModelDropdownMenu.style.display = 'none';
+      if (restoreModelFocus) btnChatModelPicker.focus({ preventScroll: true });
 
       if (typeof window.setControlModel === 'function') {
         window.setControlModel(modelId);
@@ -1218,9 +1594,9 @@
 
         // Search input
         const searchBox = document.createElement('div');
-        searchBox.style.cssText = 'padding: 2px 2px 6px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 6px;';
+        searchBox.className = 'menu-search';
         searchBox.innerHTML = `
-          <input type="text" id="modelFilterInput" placeholder="🔍 Search or filter any model..." value="${escapeHtml(modelSearchQuery)}" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid var(--ax-border); border-radius: 8px; padding: 6px 10px; font-size: 11.5px; color: var(--ax-text); outline: none;">
+          <input type="text" id="modelFilterInput" aria-label="Search models" placeholder="Search models..." value="${escapeHtml(modelSearchQuery)}" class="form-input">
         `;
         chatModelDropdownMenu.appendChild(searchBox);
 
@@ -1235,7 +1611,7 @@
         // Scrollable container for list
         const listContainer = document.createElement('div');
         listContainer.id = 'modelListItemsContainer';
-        listContainer.style.cssText = 'max-height: 280px; overflow-y: auto;';
+        listContainer.className = 'menu-list';
         chatModelDropdownMenu.appendChild(listContainer);
 
         function renderFilteredModels() {
@@ -1250,7 +1626,7 @@
           });
 
           if (filtered.length === 0) {
-            listContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--ax-text-muted); font-size: 11px;">No models match your search.</div>';
+            listContainer.innerHTML = '<div class="menu-empty">No models match your search.</div>';
           } else {
             // Group models by clean category
             const groups = {};
@@ -1267,7 +1643,7 @@
 
             for (const [groupName, items] of Object.entries(groups)) {
               const groupHeader = document.createElement('div');
-              groupHeader.style.cssText = 'font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ax-text-muted); padding: 6px 8px 3px;';
+              groupHeader.className = 'menu-heading';
               groupHeader.textContent = groupName;
               listContainer.appendChild(groupHeader);
 
@@ -1275,31 +1651,30 @@
                 const item = document.createElement('div');
                 item.className = 'chat-model-menu-item';
                 item.setAttribute('data-model', m.id);
-                item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 8px; cursor: pointer; transition: all 0.15s; margin-bottom: 2px;';
 
                 const isSelected = m.id === currentChatModel;
                 if (isSelected) {
-                  item.style.background = 'rgba(99, 102, 241, 0.18)';
-                  item.style.border = '1px solid rgba(99, 102, 241, 0.35)';
+                  item.style.background = 'var(--ax-selected)';
+                  item.style.border = '1px solid var(--ax-control-border)';
                 } else {
                   item.style.border = '1px solid transparent';
                 }
 
                 const friendlyName = formatModelName(m.id);
                 item.innerHTML = `
-                  <div style="display: flex; align-items: center; gap: 9px; overflow: hidden; min-width: 0;">
-                    <span style="font-size: 14px; flex-shrink: 0;">${getModelIcon(m.id)}</span>
-                    <div style="display: flex; flex-direction: column; min-width: 0;">
-                      <span style="font-size: 12px; font-weight: ${isSelected ? '600' : '500'}; color: var(--ax-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(friendlyName)}</span>
-                      <span style="font-size: 9.5px; color: var(--ax-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.75;">${escapeHtml(m.id)}</span>
+                  <div class="model-menu-identity">
+                    <span class="model-menu-icon">${getModelIcon(m.id)}</span>
+                    <div class="model-menu-details">
+                      <span class="model-menu-name" style="font-weight: ${isSelected ? '600' : '500'};">${escapeHtml(friendlyName)}</span>
+                      <span class="model-menu-meta">${escapeHtml(m.id)}</span>
                     </div>
                   </div>
-                  <span class="model-check" style="color: #818cf8; font-weight: bold; font-size: 12px; opacity: ${isSelected ? '1' : '0'}; flex-shrink: 0; margin-left: 6px;">✓</span>
+                  <span class="model-check" style="opacity: ${isSelected ? '1' : '0'};">${workspaceUI.icon('check')}</span>
                 `;
 
                 item.onmouseenter = () => {
                   if (item.getAttribute('data-model') !== currentChatModel) {
-                    item.style.background = 'rgba(255, 255, 255, 0.05)';
+                    item.style.background = 'var(--ax-hover)';
                   }
                 };
                 item.onmouseleave = () => {
@@ -1323,12 +1698,12 @@
 
         // Custom Model Direct Input row at bottom
         const customContainer = document.createElement('div');
-        customContainer.style.cssText = 'border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px; margin-top: 6px;';
+        customContainer.className = 'menu-custom';
         customContainer.innerHTML = `
-          <div style="font-size: 9.5px; font-weight: 700; text-transform: uppercase; color: var(--ax-text-muted); margin-bottom: 4px; padding-left: 2px;">Use Custom Model ID</div>
-          <div style="display: flex; gap: 6px;">
-            <input type="text" id="customModelDirectInput" placeholder="e.g. claude-3-7-sonnet" style="flex: 1; min-width: 0; background: rgba(255,255,255,0.06); border: 1px solid var(--ax-border); border-radius: 6px; padding: 5px 8px; font-size: 11px; color: var(--ax-text); outline: none;">
-            <button type="button" id="btnApplyCustomDirectModel" style="background: var(--ax-primary); color: var(--ax-on-primary); border: none; border-radius: 6px; padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;">Set</button>
+          <label class="menu-heading" for="customModelDirectInput">Use Custom Model ID</label>
+          <div class="model-custom-controls">
+            <input type="text" id="customModelDirectInput" placeholder="e.g. claude-3-7-sonnet" class="form-input">
+            <button type="button" id="btnApplyCustomDirectModel" class="btn-primary">Set</button>
           </div>
         `;
         customContainer.onclick = (e) => e.stopPropagation();
@@ -1363,20 +1738,34 @@
       const isVisible = chatModelDropdownMenu.style.display === 'block';
       if (!isVisible) {
         populateChatModelPicker();
+        window.AxionMotion.cancelConversation();
+        chatModelDropdownMenu.inert = false;
         chatModelDropdownMenu.style.display = 'block';
+        positionChatModelMenu();
       } else {
+        chatModelDropdownMenu.inert = true;
         chatModelDropdownMenu.style.display = 'none';
       }
     };
 
+    chatModelDropdownMenu.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      chatModelDropdownMenu.inert = true;
+      chatModelDropdownMenu.style.display = 'none';
+      btnChatModelPicker.focus({ preventScroll: true });
+    }, true);
+
     document.addEventListener('click', (e) => {
       if (!chatModelDropdownMenu.contains(e.target) && e.target !== btnChatModelPicker) {
+        chatModelDropdownMenu.inert = true;
         chatModelDropdownMenu.style.display = 'none';
       }
     });
 
     window.runHermesQuickCommand = async (cmd) => {
-      hermesConsoleOutputEl.textContent = `⏳ Running: hermes ${cmd}...\n(Executing live diagnostics, please wait a moment...)\n`;
+      hermesConsoleOutputEl.textContent = `Running: hermes ${cmd}...\n(Executing live diagnostics, please wait a moment...)\n`;
       const quickBtns = document.querySelectorAll('#hermesControlModal .btn-action');
       quickBtns.forEach(b => b.style.opacity = '0.5');
 
@@ -1422,12 +1811,15 @@
 
     function setSettingsMode(mode) {
       currentConfig.mode = mode;
-      btnModeLocalHermes.style.background = mode === 'hermes_local' ? 'var(--ax-primary)' : 'var(--ax-surface)';
-      btnModeLocalHermes.style.color = mode === 'hermes_local' ? '#fff' : 'var(--ax-text)';
-      btnModeDirectCloud.style.background = mode === 'direct_cloud' ? 'var(--ax-primary)' : 'var(--ax-surface)';
-      btnModeDirectCloud.style.color = mode === 'direct_cloud' ? '#fff' : 'var(--ax-text)';
-      btnModeCustomGateway.style.background = mode === 'custom_gateway' ? 'var(--ax-primary)' : 'var(--ax-surface)';
-      btnModeCustomGateway.style.color = mode === 'custom_gateway' ? '#fff' : 'var(--ax-text)';
+      btnModeLocalHermes.setAttribute('aria-pressed', String(mode === 'hermes_local'));
+      btnModeDirectCloud.setAttribute('aria-pressed', String(mode === 'direct_cloud'));
+      btnModeCustomGateway.setAttribute('aria-pressed', String(mode === 'custom_gateway'));
+      btnModeLocalHermes.style.setProperty('--control-fill', mode === 'hermes_local' ? 'var(--ax-primary)' : 'var(--ax-surface)');
+      btnModeLocalHermes.style.setProperty('--control-ink', mode === 'hermes_local' ? 'var(--ax-on-action)' : 'var(--ax-text)');
+      btnModeDirectCloud.style.setProperty('--control-fill', mode === 'direct_cloud' ? 'var(--ax-primary)' : 'var(--ax-surface)');
+      btnModeDirectCloud.style.setProperty('--control-ink', mode === 'direct_cloud' ? 'var(--ax-on-action)' : 'var(--ax-text)');
+      btnModeCustomGateway.style.setProperty('--control-fill', mode === 'custom_gateway' ? 'var(--ax-primary)' : 'var(--ax-surface)');
+      btnModeCustomGateway.style.setProperty('--control-ink', mode === 'custom_gateway' ? 'var(--ax-on-action)' : 'var(--ax-text)');
 
       sectionLocalHermes.style.display = mode === 'hermes_local' ? 'flex' : 'none';
       sectionDirectCloud.style.display = mode === 'direct_cloud' ? 'flex' : 'none';
@@ -1462,13 +1854,13 @@
       if (!modeText || !dot) return;
       if (currentConfig.mode === 'direct_cloud') {
         modeText.textContent = `Cloud (${(currentConfig.cloud_provider || 'ai').toUpperCase()})`;
-        dot.style.background = '#10b981';
+        dot.style.background = 'var(--ax-success)';
       } else if (currentConfig.mode === 'custom_gateway') {
         modeText.textContent = 'Custom Server';
-        dot.style.background = '#8b5cf6';
+        dot.style.background = 'var(--ax-text-secondary)';
       } else {
         modeText.textContent = 'Local Hermes';
-        dot.style.background = '#3b82f6';
+        dot.style.background = 'var(--ax-text-secondary)';
       }
     }
 
@@ -1484,8 +1876,6 @@
 
     if (btnOpenSettingsEl) btnOpenSettingsEl.onclick = openSettingsModal;
     if (sidebarConnPillEl) sidebarConnPillEl.onclick = openSettingsModal;
-    const mindStatusElBtn = document.getElementById('mindStatus');
-    if (mindStatusElBtn) mindStatusElBtn.onclick = openSettingsModal;
     if (btnCloseSettingsModalEl) btnCloseSettingsModalEl.onclick = closeSettingsModal;
     if (btnCancelSettingsEl) btnCancelSettingsEl.onclick = closeSettingsModal;
 
@@ -1531,19 +1921,23 @@
       const customStorage = document.getElementById('cfgStorageDir').value.trim();
       currentConfig.custom_storage_dir = customStorage ? customStorage : null;
 
+      setControlBusy(btnSaveSettingsEl, true);
       try {
         await invoke('save_connection_config', { config: currentConfig });
         updateSidebarConnIndicator();
         closeSettingsModal();
         await fetchPersonas();
+        await reconcileConversationSelection();
         renderUnifiedSidebar();
       } catch (err) {
         alert('Failed to save settings: ' + err);
-      }
+      } finally { setControlBusy(btnSaveSettingsEl, false); }
     };
 
     // Browse Folder for Cloud / Persistent Storage
     document.getElementById('btnPickStorageDir').onclick = async () => {
+      const button = document.getElementById('btnPickStorageDir');
+      setControlBusy(button, true);
       try {
         const folder = await invoke('pick_folder');
         if (folder) {
@@ -1551,15 +1945,14 @@
         }
       } catch (e) {
         console.error('Error picking folder:', e);
-      }
+      } finally { setControlBusy(button, false); }
     };
 
     btnTestConnEl.onclick = async () => {
       cfgTestStatusEl.style.display = 'block';
-      cfgTestStatusEl.style.background = 'rgba(59, 130, 246, 0.15)';
-      cfgTestStatusEl.style.color = '#93c5fd';
-      cfgTestStatusEl.style.border = '1px solid rgba(59, 130, 246, 0.3)';
-      cfgTestStatusEl.textContent = '⏳ Testing connection ping...';
+      cfgTestStatusEl.style.color = 'var(--ax-info)';
+      cfgTestStatusEl.style.border = '1px solid var(--ax-control-border)';
+      setInterfaceFeedback(cfgTestStatusEl, 'activity', 'Testing connection ping...');
 
       const probeConfig = {
         mode: currentConfig.mode,
@@ -1573,18 +1966,17 @@
         custom_model: document.getElementById('cfgCustomModel').value.trim()
       };
 
+      setControlBusy(btnTestConnEl, true);
       try {
         const res = await invoke('test_connection', { config: probeConfig });
-        cfgTestStatusEl.style.background = 'rgba(16, 185, 129, 0.15)';
-        cfgTestStatusEl.style.color = '#a7f3d0';
-        cfgTestStatusEl.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-        cfgTestStatusEl.textContent = '✅ ' + res;
+        cfgTestStatusEl.style.color = 'var(--ax-success)';
+        cfgTestStatusEl.style.border = '1px solid var(--ax-control-border)';
+        setInterfaceFeedback(cfgTestStatusEl, 'check', res);
       } catch (err) {
-        cfgTestStatusEl.style.background = 'rgba(239, 68, 68, 0.15)';
-        cfgTestStatusEl.style.color = '#fca5a5';
-        cfgTestStatusEl.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-        cfgTestStatusEl.textContent = '❌ ' + err;
-      }
+        cfgTestStatusEl.style.color = 'var(--ax-danger)';
+        cfgTestStatusEl.style.border = '1px solid var(--ax-control-border)';
+        setInterfaceFeedback(cfgTestStatusEl, 'alert', String(err));
+      } finally { setControlBusy(btnTestConnEl, false); }
     };
 
     // 1-Click Backup Export & Restore Logic
@@ -1594,22 +1986,21 @@
 
     btnExportBackupEl.onclick = async () => {
       backupFeedbackEl.style.display = 'block';
-      backupFeedbackEl.style.background = 'rgba(59, 130, 246, 0.15)';
-      backupFeedbackEl.style.color = '#93c5fd';
-      backupFeedbackEl.textContent = '⏳ Creating compressed backup zip archive...';
+      backupFeedbackEl.style.color = 'var(--ax-info)';
+      setInterfaceFeedback(backupFeedbackEl, 'activity', 'Creating compressed backup zip archive...');
+      setControlBusy(btnExportBackupEl, true);
       try {
         const zipFile = await invoke('export_customer_backup');
-        backupFeedbackEl.style.background = 'rgba(16, 185, 129, 0.15)';
-        backupFeedbackEl.style.color = '#a7f3d0';
-        backupFeedbackEl.textContent = '✅ Backup saved to: ' + zipFile;
+        backupFeedbackEl.style.color = 'var(--ax-success)';
+        setInterfaceFeedback(backupFeedbackEl, 'check', 'Backup saved to: ' + zipFile);
       } catch (err) {
-        backupFeedbackEl.style.background = 'rgba(239, 68, 68, 0.15)';
-        backupFeedbackEl.style.color = '#fca5a5';
-        backupFeedbackEl.textContent = '❌ Backup failed: ' + err;
-      }
+        backupFeedbackEl.style.color = 'var(--ax-danger)';
+        setInterfaceFeedback(backupFeedbackEl, 'alert', 'Backup failed: ' + err);
+      } finally { setControlBusy(btnExportBackupEl, false); }
     };
 
     btnRestoreBackupEl.onclick = async () => {
+      setControlBusy(btnRestoreBackupEl, true);
       try {
         const selectedZip = await invoke('pick_backup_zip_file');
         if (!selectedZip) return;
@@ -1619,26 +2010,24 @@
         }
 
         backupFeedbackEl.style.display = 'block';
-        backupFeedbackEl.style.background = 'rgba(59, 130, 246, 0.15)';
-        backupFeedbackEl.style.color = '#93c5fd';
-        backupFeedbackEl.textContent = '⏳ Restoring backup archive...';
+        backupFeedbackEl.style.color = 'var(--ax-info)';
+        setInterfaceFeedback(backupFeedbackEl, 'activity', 'Restoring backup archive...');
 
         const restoredCount = await invoke('restore_customer_backup', { zipPath: selectedZip });
-        backupFeedbackEl.style.background = 'rgba(16, 185, 129, 0.15)';
-        backupFeedbackEl.style.color = '#a7f3d0';
-        backupFeedbackEl.textContent = `✅ Successfully restored ${restoredCount} files! Refreshing...`;
+        backupFeedbackEl.style.color = 'var(--ax-success)';
+        setInterfaceFeedback(backupFeedbackEl, 'check', `Successfully restored ${restoredCount} files! Refreshing...`);
 
         setTimeout(async () => {
           await fetchPersonas();
+          await reconcileConversationSelection();
           renderUnifiedSidebar();
           closeSettingsModal();
         }, 1500);
       } catch (err) {
         backupFeedbackEl.style.display = 'block';
-        backupFeedbackEl.style.background = 'rgba(239, 68, 68, 0.15)';
-        backupFeedbackEl.style.color = '#fca5a5';
-        backupFeedbackEl.textContent = '❌ Restore failed: ' + err;
-      }
+        backupFeedbackEl.style.color = 'var(--ax-danger)';
+        setInterfaceFeedback(backupFeedbackEl, 'alert', 'Restore failed: ' + err);
+      } finally { setControlBusy(btnRestoreBackupEl, false); }
     };
 
     // --- Cloud Account & Sync Modal Logic ---
@@ -1659,6 +2048,19 @@
     const accountAvatarDotEl = document.getElementById('accountAvatarDot');
     const btnLogoutEl = document.getElementById('btnLogout');
     const btnForceCloudSyncEl = document.getElementById('btnForceCloudSync');
+    const railSignOutEl = document.getElementById('btnRailSignOut');
+    document.getElementById('btnSidebarSignIn').onclick = openAuthModal;
+    railSignOutEl.onclick = () => btnLogoutEl.click();
+    new MutationObserver(() => { railSignOutEl.disabled = btnLogoutEl.disabled; })
+      .observe(btnLogoutEl, { attributes: true, attributeFilter: ['disabled'] });
+    railSignOutEl.disabled = btnLogoutEl.disabled;
+
+    function updateRailAccountSummary() {
+      const summary = accountUserEmailEl.textContent;
+      btnOpenAuthModalEl.title = `User menu · ${summary}`;
+      btnOpenAuthModalEl.setAttribute('aria-label', `User menu: ${summary}`);
+    }
+
 
     let currentAuthMode = 'login'; // 'login' or 'register'
     let cloudAccountSession = null; // Tokens stay in memory; persistence is backend DPAPI only.
@@ -1667,11 +2069,17 @@
     function renderAccountSession(userObj) {
       cloudAccountSession = userObj || null;
       const signedIn = Boolean(userObj && userObj.email && userObj.id && userObj.token);
+      document.getElementById('sidebarSignedOut').hidden = signedIn;
+      railSignOutEl.hidden = !signedIn;
+      document.getElementById('btnSidebarSignIn').hidden = signedIn;
       authLoggedInViewEl.style.display = signedIn ? 'block' : 'none';
       authLoggedOutViewEl.style.display = signedIn ? 'none' : 'block';
       loggedInUserEmailEl.textContent = signedIn ? userObj.email : '';
       accountUserEmailEl.textContent = signedIn ? userObj.email : 'Local / Sign In';
-      accountAvatarDotEl.style.background = signedIn ? '#10b981' : '#64748b';
+      accountUserEmailEl.title = accountUserEmailEl.textContent;
+      document.getElementById('accountStorageMode').textContent = signedIn ? 'Local workspace · Cloud account verified' : 'Local workspace · Not signed in';
+      updateRailAccountSummary();
+      accountAvatarDotEl.style.background = signedIn ? 'var(--ax-success)' : 'var(--ax-text-muted)';
       accountAvatarDotEl.title = signedIn ? 'Authenticated account (sync status is separate)' : 'Offline / Local';
       document.getElementById('syncStatusBadge').textContent = signedIn ? 'Signed in · Checking backup status' : '';
       cloudAutoBackup?.accountChanged(signedIn ? userObj.id : null);
@@ -1770,13 +2178,16 @@
         renderDiagnosticsLogs();
       } catch (err) {
         console.warn('Diagnostics polling notice:', err);
+        document.getElementById('diagOverviewStatus').textContent = 'Unable to refresh diagnostics. Previously displayed values may be out of date.';
       }
     }
 
     function renderDiagnosticsStatus(s) {
       if (!s) return;
-      document.getElementById('diagStorageStatus').textContent = s.storage_writable ? '● ONLINE (R/W OK)' : '❌ ERROR (Blocked)';
-      document.getElementById('diagStorageStatus').style.color = s.storage_writable ? '#34d399' : '#f87171';
+      document.getElementById('diagOverviewStatus').textContent = `Last received: ${s.timestamp} · Axion Mind ${s.app_version} · ${s.os_info}`;
+      document.getElementById('diagModelPorts').textContent = 'Local bridge availability';
+      setInterfaceFeedback(document.getElementById('diagStorageStatus'), s.storage_writable ? 'check' : 'alert', s.storage_writable ? 'ONLINE (R/W OK)' : 'ERROR (Blocked)');
+      document.getElementById('diagStorageStatus').style.color = s.storage_writable ? 'var(--ax-success)' : 'var(--ax-danger)';
       document.getElementById('diagStoragePath').textContent = s.storage_dir;
       document.getElementById('diagStoragePath').title = s.storage_dir;
 
@@ -1788,11 +2199,11 @@
       if (s.antigravity_reachable) activeBridges.push('Antigravity (8766)');
       if (s.gemini_web_reachable) activeBridges.push('Argon (8768)');
       if (s.deepseek_reachable) activeBridges.push('DeepSeek (8769)');
-      document.getElementById('diagModelStatus').textContent = activeBridges.length > 0 ? activeBridges.join(', ') : '⚠️ No Local Bridge';
-      document.getElementById('diagModelStatus').style.color = activeBridges.length > 0 ? '#38bdf8' : '#f87171';
+      setInterfaceFeedback(document.getElementById('diagModelStatus'), activeBridges.length > 0 ? 'model' : 'alert', activeBridges.length > 0 ? activeBridges.join(', ') : 'No Local Bridge');
+      document.getElementById('diagModelStatus').style.color = activeBridges.length > 0 ? 'var(--ax-info)' : 'var(--ax-danger)';
 
       document.getElementById('diagCloudStatus').textContent = s.supabase_reachable ? 'Supabase reachable · backup status is separate' : 'Cloud unreachable · local files retained';
-      document.getElementById('diagCloudStatus').style.color = s.supabase_reachable ? '#34d399' : '#fca5a5';
+      document.getElementById('diagCloudStatus').style.color = s.supabase_reachable ? 'var(--ax-success)' : 'var(--ax-danger)';
       const savedUser = cloudAccountSession ? JSON.stringify(cloudAccountSession) : null;
       let userEmail = 'Local';
       if (savedUser) {
@@ -1837,26 +2248,25 @@
       document.getElementById('countSyncLogs').textContent = cachedDiagLogs.filter(i => ['STORAGE', 'CLOUD_SYNC', 'SYNC'].includes(i.tag)).length;
 
       if (filtered.length === 0) {
-        diagTerminalConsoleEl.innerHTML = '<div style="color: #64748b; padding: 20px 0; text-align: center;">No diagnostic events match current filter. System operating cleanly.</div>';
+        diagTerminalConsoleEl.innerHTML = '<p class="diagnostic-log-empty">No diagnostic events match the current filter.</p>';
         return;
       }
 
       let html = '';
       for (const log of filtered) {
-        let color = '#38bdf8'; // Info
+        let levelClass = '';
         const lvl = (log.level || '').toUpperCase();
-        if (lvl.includes('ERROR') || lvl.includes('FATAL')) color = '#f87171';
-        else if (lvl.includes('WARN')) color = '#fbbf24';
-        else if (lvl.includes('DEBUG') || lvl.includes('TRACE')) color = '#94a3b8';
-        else if (lvl.includes('PERF')) color = '#34d399';
+        if (lvl.includes('ERROR') || lvl.includes('FATAL')) levelClass = 'is-error';
+        else if (lvl.includes('WARN')) levelClass = 'is-warning';
+        else if (lvl.includes('DEBUG') || lvl.includes('TRACE')) levelClass = 'is-muted';
 
-        html += `<div style="margin-bottom: 5px; line-height: 1.45;">`;
-        html += `<span style="color: #64748b;">[${log.timestamp}]</span> `;
-        html += `<span style="color: ${color}; font-weight: 700;">[${log.level}]</span> `;
-        html += `<span style="color: #c084fc; font-weight: 600;">[${log.tag}]</span> `;
-        html += `<span style="color: #e2e8f0;">${escapeHtml(log.message)}</span>`;
+        html += `<div class="diagnostic-log-row">`;
+        html += `<span class="diagnostic-log-time">[${escapeHtml(log.timestamp)}]</span> `;
+        html += `<span class="diagnostic-log-level ${levelClass}">[${escapeHtml(log.level)}]</span> `;
+        html += `<span class="diagnostic-log-tag">[${escapeHtml(log.tag)}]</span> `;
+        html += `<span class="diagnostic-log-message">${escapeHtml(log.message)}</span>`;
         if (log.details) {
-          html += `<div style="color: #94a3b8; padding-left: 20px; font-size: 10.5px; opacity: 0.85;">└─ ${escapeHtml(log.details)}</div>`;
+          html += `<div class="diagnostic-log-details">└─ ${escapeHtml(log.details)}</div>`;
         }
         html += `</div>`;
       }
@@ -1872,8 +2282,9 @@
     // Filter pill click handlers
     document.querySelectorAll('.diag-filter-btn').forEach(btn => {
       btn.onclick = () => {
-        document.querySelectorAll('.diag-filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.diag-filter-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         currentDiagFilter = btn.dataset.filter;
         renderDiagnosticsLogs();
       };
@@ -1884,29 +2295,33 @@
     btnCloseDiagnosticsModalEl.onclick = closeDiagnosticsModal;
 
     btnRunDeepHealthCheckEl.onclick = async () => {
-      btnRunDeepHealthCheckEl.innerHTML = '<span>⏳</span> Scanning...';
+      setControlBusy(btnRunDeepHealthCheckEl, true);
+      btnRunDeepHealthCheckEl.innerHTML = workspaceUI.icon('activity') + '<span>Scanning...</span>';
       try {
         const report = await invoke('run_system_diagnostics');
         renderDiagnosticsStatus(report);
         await refreshDiagnosticsData();
         const issuesCount = report.issues_detected ? report.issues_detected.length : 0;
-        document.getElementById('diagExportStatusFeedback').textContent = issuesCount === 0 ? '✅ Health scan passed! 0 issues found.' : `⚠️ Scan flagged ${issuesCount} item(s).`;
+        setInterfaceFeedback(document.getElementById('diagExportStatusFeedback'), issuesCount === 0 ? 'check' : 'alert', issuesCount === 0 ? 'Health scan passed! 0 issues found.' : `Scan flagged ${issuesCount} item(s).`);
       } catch (err) {
         document.getElementById('diagExportStatusFeedback').textContent = 'Scan error: ' + err;
       } finally {
-        btnRunDeepHealthCheckEl.innerHTML = '<span>⚡</span> Run Full Health Check';
+        setControlBusy(btnRunDeepHealthCheckEl, false);
+        btnRunDeepHealthCheckEl.innerHTML = workspaceUI.icon('bolt') + '<span>Run Full Health Check</span>';
       }
     };
 
     btnExportDiagnosticReportEl.onclick = async () => {
-      btnExportDiagnosticReportEl.innerHTML = '<span>⏳</span> Writing...';
+      setControlBusy(btnExportDiagnosticReportEl, true);
+      btnExportDiagnosticReportEl.innerHTML = workspaceUI.icon('activity') + '<span>Writing...</span>';
       try {
         const exportPath = await invoke('export_diagnostic_report');
-        document.getElementById('diagExportStatusFeedback').textContent = `✅ Saved: ${exportPath}`;
+        setInterfaceFeedback(document.getElementById('diagExportStatusFeedback'), 'check', `Saved: ${exportPath}`);
       } catch (err) {
         document.getElementById('diagExportStatusFeedback').textContent = `Export failed: ${err}`;
       } finally {
-        btnExportDiagnosticReportEl.innerHTML = '<span>📥</span> Export Report (.md)';
+        setControlBusy(btnExportDiagnosticReportEl, false);
+        btnExportDiagnosticReportEl.innerHTML = workspaceUI.icon('download') + '<span>Export Report (.md)</span>';
       }
     };
 
@@ -1916,7 +2331,7 @@
       await refreshDiagnosticsData();
     };
 
-    btnOpenAuthModalEl.onclick = openAuthModal;
+    document.getElementById('btnAccountCloudBackup').onclick = openAuthModal;
     sidebarAccountPillEl.onclick = openAuthModal;
     btnCloseAuthModalEl.onclick = closeAuthModal;
 
@@ -1929,12 +2344,13 @@
       },
       onStatus: (message, kind) => {
         authFeedbackEl.style.display = 'block';
-        authFeedbackEl.style.background = kind === 'error' ? 'rgba(239,68,68,.15)' : 'rgba(59,130,246,.15)';
-        authFeedbackEl.style.color = kind === 'error' ? '#fca5a5' : '#a7f3d0';
-        authFeedbackEl.textContent = message;
+        authFeedbackEl.style.color = kind === 'error' ? 'var(--ax-danger)' : 'var(--ax-success)';
+        authFeedbackEl.textContent = message === 'Signed in with Google. Cloud sync is available; use Sync Now to synchronize your data.'
+          ? 'Signed in with Google. Cloud backup is available; signing in does not verify a backup.' : message;
       },
       onBusy: busy => {
         btnGoogleSignInEl.disabled = busy;
+        btnGoogleSignInEl.setAttribute('aria-busy', String(busy));
         btnSubmitAuthEl.disabled = busy;
         btnGoogleSignInEl.textContent = busy ? 'Waiting for Google…' : 'Continue with Google';
         btnCancelGoogleSignInEl.style.display = busy ? 'block' : 'none';
@@ -1948,19 +2364,15 @@
 
     tabLoginEl.onclick = () => {
       currentAuthMode = 'login';
-      tabLoginEl.style.color = 'var(--ax-primary)';
-      tabLoginEl.style.borderBottom = '2px solid var(--ax-primary)';
-      tabRegisterEl.style.color = 'var(--ax-text-muted)';
-      tabRegisterEl.style.borderBottom = 'none';
+      tabLoginEl.setAttribute('aria-pressed', 'true');
+      tabRegisterEl.setAttribute('aria-pressed', 'false');
       btnSubmitAuthEl.textContent = 'Sign In';
     };
 
     tabRegisterEl.onclick = () => {
       currentAuthMode = 'register';
-      tabRegisterEl.style.color = 'var(--ax-primary)';
-      tabRegisterEl.style.borderBottom = '2px solid var(--ax-primary)';
-      tabLoginEl.style.color = 'var(--ax-text-muted)';
-      tabLoginEl.style.borderBottom = 'none';
+      tabRegisterEl.setAttribute('aria-pressed', 'true');
+      tabLoginEl.setAttribute('aria-pressed', 'false');
       btnSubmitAuthEl.textContent = 'Create Account';
     };
 
@@ -1981,28 +2393,43 @@
 
       if (!email || !password) {
         authFeedbackEl.style.display = 'block';
-        authFeedbackEl.style.background = 'rgba(239, 68, 68, 0.15)';
-        authFeedbackEl.style.color = '#fca5a5';
+        authFeedbackEl.style.color = 'var(--ax-danger)';
         authFeedbackEl.textContent = 'Please enter both email and password.';
         return;
       }
 
-      authFeedbackEl.style.display = 'block';
-      authFeedbackEl.style.background = 'rgba(59, 130, 246, 0.15)';
-      authFeedbackEl.style.color = '#93c5fd';
-      authFeedbackEl.textContent = currentAuthMode === 'login' ? '⏳ Connecting & Authenticating...' : '⏳ Creating account on Cloud Vault...';
+      btnSubmitAuthEl.setAttribute('aria-busy', 'true');
+      try {
+        authFeedbackEl.style.display = 'block';
+        authFeedbackEl.style.color = 'var(--ax-info)';
+        setInterfaceFeedback(authFeedbackEl, 'activity', currentAuthMode === 'login' ? 'Connecting & Authenticating...' : 'Creating account on Cloud Vault...');
 
-      const sbUrl = document.getElementById('cfgSupabaseUrl').value.trim() || 'https://kefxeysyvtdxxdupkapa.supabase.co';
-      const sbKey = document.getElementById('cfgSupabaseKey').value.trim() || 'sb_publishable_m6nFD1nyCmeP5xMz0K_5Hw_HqIHOr2N';
+        const sbUrl = document.getElementById('cfgSupabaseUrl').value.trim() || 'https://kefxeysyvtdxxdupkapa.supabase.co';
+        const sbKey = document.getElementById('cfgSupabaseKey').value.trim() || 'sb_publishable_m6nFD1nyCmeP5xMz0K_5Hw_HqIHOr2N';
 
-      if (sbUrl && sbKey) {
-        try {
-          let authRes = null;
-          let authData = null;
+        if (sbUrl && sbKey) {
+          try {
+            let authRes = null;
+            let authData = null;
 
-          if (currentAuthMode === 'register') {
-            // 1. Direct REST Sign Up
-            const suResp = await fetch(`${sbUrl}/auth/v1/signup`, {
+            if (currentAuthMode === 'register') {
+              // 1. Direct REST Sign Up
+              const suResp = await fetch(`${sbUrl}/auth/v1/signup`, {
+                method: 'POST',
+                headers: {
+                  'apikey': sbKey,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+              });
+              const suJson = await suResp.json();
+              if (!suResp.ok) {
+                throw new Error(suJson.msg || suJson.error_description || suJson.message || 'Registration failed');
+              }
+            }
+
+            // 2. Direct REST Sign In
+            const siResp = await fetch(`${sbUrl}/auth/v1/token?grant_type=password`, {
               method: 'POST',
               headers: {
                 'apikey': sbKey,
@@ -2010,96 +2437,80 @@
               },
               body: JSON.stringify({ email, password })
             });
-            const suJson = await suResp.json();
-            if (!suResp.ok) {
-              throw new Error(suJson.msg || suJson.error_description || suJson.message || 'Registration failed');
-            }
-          }
+            const siJson = await siResp.json();
 
-          // 2. Direct REST Sign In
-          const siResp = await fetch(`${sbUrl}/auth/v1/token?grant_type=password`, {
-            method: 'POST',
-            headers: {
-              'apikey': sbKey,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email, password })
-          });
-          const siJson = await siResp.json();
-
-          if (!siResp.ok) {
-            // Auto-heal: If user clicked Sign In without registering first, attempt auto-signup then login
-            if (currentAuthMode === 'login' && (siJson.error_description?.includes('Invalid') || siJson.msg?.includes('Invalid'))) {
-              const retrySu = await fetch(`${sbUrl}/auth/v1/signup`, {
-                method: 'POST',
-                headers: { 'apikey': sbKey, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-              });
-              if (retrySu.ok) {
-                const retrySi = await fetch(`${sbUrl}/auth/v1/token?grant_type=password`, {
+            if (!siResp.ok) {
+              // Auto-heal: If user clicked Sign In without registering first, attempt auto-signup then login
+              if (currentAuthMode === 'login' && (siJson.error_description?.includes('Invalid') || siJson.msg?.includes('Invalid'))) {
+                const retrySu = await fetch(`${sbUrl}/auth/v1/signup`, {
                   method: 'POST',
                   headers: { 'apikey': sbKey, 'Content-Type': 'application/json' },
                   body: JSON.stringify({ email, password })
                 });
-                if (retrySi.ok) {
-                  authData = await retrySi.json();
+                if (retrySu.ok) {
+                  const retrySi = await fetch(`${sbUrl}/auth/v1/token?grant_type=password`, {
+                    method: 'POST',
+                    headers: { 'apikey': sbKey, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                  });
+                  if (retrySi.ok) {
+                    authData = await retrySi.json();
+                  }
                 }
               }
-            }
-            if (!authData) {
-              throw new Error(siJson.msg || siJson.error_description || siJson.message || 'Authentication failed');
-            }
-          } else {
-            authData = siJson;
-          }
-
-          const userObj = {
-            email: authData.user ? authData.user.email : email,
-            id: authData.user ? authData.user.id : null,
-            token: authData.access_token,
-            refresh_token: authData.refresh_token,
-            expires_at: authData.expires_at || Math.floor(Date.now() / 1000) + (authData.expires_in || 3600),
-            signed_in_at: new Date().toISOString()
-          };
-          await invoke('save_user_cloud_session', { session: userObj });
-          authPasswordEl.value = '';
-          renderAccountSession(userObj);
-          localStorage.setItem('axion_sb_url', sbUrl);
-          localStorage.setItem('axion_sb_key', sbKey);
-
-          // Test and hydrate sync with cloud_personas
-          try {
-            const pullResp = await fetch(`${sbUrl}/rest/v1/cloud_personas?user_id=eq.${userObj.id}`, {
-              headers: {
-                'apikey': sbKey,
-                'Authorization': `Bearer ${userObj.token}`
+              if (!authData) {
+                throw new Error(siJson.msg || siJson.error_description || siJson.message || 'Authentication failed');
               }
-            });
-            if (pullResp.ok) {
-              const cloudPersonas = await pullResp.json();
-              if (cloudPersonas && cloudPersonas.length > 0) {
-                console.log('Restored cloud personas from Supabase:', cloudPersonas.length);
-              }
+            } else {
+              authData = siJson;
             }
-          } catch (syncErr) {
-            console.warn('Initial cloud sync notice:', syncErr);
-          }
 
-          authFeedbackEl.style.background = 'rgba(16, 185, 129, 0.15)';
-          authFeedbackEl.style.color = '#a7f3d0';
-          authFeedbackEl.textContent = 'Signed in. Cloud backup is available; no backup has been verified by signing in.';
-          updateAccountUI();
-          setTimeout(closeAuthModal, 1200);
-          return;
-        } catch (sbError) {
-          authFeedbackEl.style.background = 'rgba(239, 68, 68, 0.15)';
-          authFeedbackEl.style.color = '#fca5a5';
-          authFeedbackEl.textContent = 'Supabase: ' + (sbError.message || sbError);
-          return;
+            const userObj = {
+              email: authData.user ? authData.user.email : email,
+              id: authData.user ? authData.user.id : null,
+              token: authData.access_token,
+              refresh_token: authData.refresh_token,
+              expires_at: authData.expires_at || Math.floor(Date.now() / 1000) + (authData.expires_in || 3600),
+              signed_in_at: new Date().toISOString()
+            };
+            await invoke('save_user_cloud_session', { session: userObj });
+            authPasswordEl.value = '';
+            renderAccountSession(userObj);
+            localStorage.setItem('axion_sb_url', sbUrl);
+            localStorage.setItem('axion_sb_key', sbKey);
+
+            // Test and hydrate sync with cloud_personas
+            try {
+              const pullResp = await fetch(`${sbUrl}/rest/v1/cloud_personas?user_id=eq.${userObj.id}`, {
+                headers: {
+                  'apikey': sbKey,
+                  'Authorization': `Bearer ${userObj.token}`
+                }
+              });
+              if (pullResp.ok) {
+                const cloudPersonas = await pullResp.json();
+                if (cloudPersonas && cloudPersonas.length > 0) {
+                  console.log('Restored cloud personas from Supabase:', cloudPersonas.length);
+                }
+              }
+            } catch (syncErr) {
+              console.warn('Initial cloud sync notice:', syncErr);
+            }
+
+            authFeedbackEl.style.color = 'var(--ax-success)';
+            authFeedbackEl.textContent = 'Signed in. Cloud backup is available; no backup has been verified by signing in.';
+            updateAccountUI();
+            setTimeout(closeAuthModal, 1200);
+            return;
+          } catch (sbError) {
+            authFeedbackEl.style.color = 'var(--ax-danger)';
+            authFeedbackEl.textContent = 'Supabase: ' + (sbError.message || sbError);
+            return;
+          }
         }
-      }
 
-      authFeedbackEl.textContent = 'Cloud authentication is not configured. Local mode does not require sign-in.';
+        authFeedbackEl.textContent = 'Cloud authentication is not configured. Local mode does not require sign-in.';
+      } finally { btnSubmitAuthEl.setAttribute('aria-busy', 'false'); }
     };
 
     btnLogoutEl.onclick = async () => {
@@ -2109,8 +2520,7 @@
       } catch (_) {}
       await updateAccountUI();
       authFeedbackEl.style.display = 'block';
-      authFeedbackEl.style.background = 'rgba(245, 158, 11, 0.15)';
-      authFeedbackEl.style.color = '#fcd34d';
+      authFeedbackEl.style.color = 'var(--ax-warning)';
       authFeedbackEl.textContent = 'Signed out. Operating in offline/local-only mode.';
     };
 
@@ -2121,8 +2531,7 @@
       authFeedbackEl.style.display = 'block';
       authFeedbackEl.style.whiteSpace = 'pre-wrap';
       authFeedbackEl.style.overflowWrap = 'anywhere';
-      authFeedbackEl.style.background = kind === 'error' ? 'rgba(239,68,68,.15)' : kind === 'success' ? 'rgba(16,185,129,.15)' : 'rgba(59,130,246,.15)';
-      authFeedbackEl.style.color = kind === 'error' ? '#fca5a5' : kind === 'success' ? '#a7f3d0' : '#93c5fd';
+      authFeedbackEl.style.color = kind === 'error' ? 'var(--ax-danger)' : kind === 'success' ? 'var(--ax-success)' : 'var(--ax-info)';
       authFeedbackEl.textContent = message;
     }
     function renderCloudBackupState(state) {
@@ -2143,6 +2552,7 @@
       const at = own && state.lastVerifiedAt ? new Date(state.lastVerifiedAt).toLocaleString() : 'No verified backup recorded on this device for this account/folder';
       document.getElementById('cloudBackupSummary').textContent = detail + '\nLast verified: ' + at + '\nAutomatic backups: ' + (own && state.enabled ? 'ON while this app is open' : 'OFF');
       document.getElementById('sidebarBackupStatus').textContent = short;
+      updateRailAccountSummary();
       document.getElementById('sidebarBackupStatus').style.color = own && state.state === 'verified' ? 'var(--ax-success)' : state.dirty ? 'var(--ax-warning)' : 'var(--ax-text-muted)';
       document.getElementById('syncStatusBadge').textContent = own && state.lastVerifiedAt ? 'Last verified: ' + at + (state.dirty ? ' · local changes pending' : '') : 'Signed in · Backup status is separate';
     }
@@ -2242,13 +2652,14 @@
 
       statusEl.style.display = 'block';
       statusEl.style.color = 'var(--ax-primary)';
-      statusEl.textContent = '⏳ Distilling Knowledge Bank via Hermes Mind... (Extracting rules, math & style)';
+      setInterfaceFeedback(statusEl, 'activity', 'Distilling Knowledge Bank via Hermes Mind... (Extracting rules, math & style)');
       document.getElementById('btnAutoCloneMind').style.opacity = '0.5';
+      const finishBrandActivity = workspaceUI.beginActivity();
 
       try {
         const result = await invoke('clone_persona_from_source', { name: name, source: source });
         statusEl.style.color = 'var(--ax-success)';
-        statusEl.textContent = '✅ Knowledge Bank extracted! Review details below and click Save Persona.';
+        setInterfaceFeedback(statusEl, 'check', 'Knowledge Bank extracted! Review details below and click Save Persona.');
         
         if (result.system_prompt) {
           document.getElementById('modalPersonaSystemPrompt').value = result.system_prompt;
@@ -2261,12 +2672,14 @@
         }
         if (result.avatar) {
           document.getElementById('modalPersonaEmoji').value = result.avatar;
+          syncAvatarPresets();
         }
       } catch (err) {
         statusEl.style.color = 'var(--ax-danger)';
-        statusEl.textContent = '❌ Cloning error: ' + err;
+        setInterfaceFeedback(statusEl, 'alert', 'Cloning error: ' + err);
       } finally {
         document.getElementById('btnAutoCloneMind').style.opacity = '1';
+        finishBrandActivity();
       }
     };
 
@@ -2350,16 +2763,14 @@
         }
         await invoke('save_all_personas', { personasList: updated });
 
-        // Keep the currently open chat session if editing the same persona
-        if (existingIdx >= 0 && activeId && (activeId === personaId || activeId.startsWith(personaId + '_'))) {
-          // Keep activeId intact
-        } else {
-          activeMode = 'persona';
-          activeId = personaId;
-        }
+        const keepConversation = existingIdx >= 0 && activeMode === 'persona'
+          && conversationOwner(activeMode, activeId)?.persona.id === personaId;
         closeModal();
         await fetchPersonas();
-        renderUnifiedSidebar();
+        if (keepConversation && conversationOwner(activeMode, activeId)) {
+          updateConversationIdentity(conversationOwner(activeMode, activeId), activeMode);
+          renderUnifiedSidebar();
+        } else await activatePersona(personas.find(persona => persona.id === personaId));
       } catch (e) {
         alert("Error saving persona: " + e.message);
       }
@@ -2380,13 +2791,9 @@
         await fetchPersonas();
         if (personas.length > 0) {
           const nextPersona = personas[0];
-          const sessions = agentSessionsMap[nextPersona.id] || [];
-          selectItem('persona', sessions.length > 0 ? sessions[0].id : nextPersona.id);
+          await activatePersona(nextPersona);
         } else {
-          messagesContainerEl.innerHTML = '<div class="empty-state"><div class="big-emoji">🤖</div><h3>No Personas</h3><p>Click "+ New Persona" in the sidebar to create one.</p></div>';
-          activePersonaNameEl.textContent = 'No Persona Selected';
-          activePersonaTitleEl.textContent = '';
-          activePersonaAvatarEl.textContent = '🤖';
+          showEmptyConversation(null);
         }
         renderUnifiedSidebar();
       } catch (e) {
@@ -2402,6 +2809,7 @@
       chatInputEl.oninput = () => {
         chatInputEl.style.height = 'auto';
         chatInputEl.style.height = Math.min(chatInputEl.scrollHeight, 160) + 'px';
+        refreshSendControl();
       };
 
       // Enter to send
@@ -2413,14 +2821,15 @@
       };
 
       btnSendEl.onclick = sendMessage;
+      refreshSendControl();
 
       // Smart Floating Jump to Bottom Button
       if (btnScrollBottomEl) {
         btnScrollBottomEl.onclick = () => {
           if (activeScrollTracker) {
-            activeScrollTracker.scrollToBottom(messagesContainerEl, true);
+            activeScrollTracker.scrollToBottom(messagesContainerEl, !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
           } else {
-            messagesContainerEl.scrollTo({ top: messagesContainerEl.scrollHeight, behavior: 'smooth' });
+            messagesContainerEl.scrollTo({ top: messagesContainerEl.scrollHeight, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
           }
           btnScrollBottomEl.classList.remove('visible');
         };
@@ -2442,35 +2851,6 @@
         document.getElementById('sidebar').classList.toggle('open');
       };
 
-      // 3-dot overflow menu
-      const btnChatOverflowMenu = document.getElementById('btnChatOverflowMenu');
-      const chatOverflowDropdown = document.getElementById('chatOverflowDropdown');
-      if (btnChatOverflowMenu && chatOverflowDropdown) {
-        btnChatOverflowMenu.onclick = (e) => {
-          e.stopPropagation();
-          const isOpen = chatOverflowDropdown.style.display === 'flex';
-          chatOverflowDropdown.style.display = isOpen ? 'none' : 'flex';
-        };
-
-        document.addEventListener('click', (e) => {
-          if (!chatOverflowDropdown.contains(e.target) && e.target !== btnChatOverflowMenu) {
-            chatOverflowDropdown.style.display = 'none';
-          }
-        });
-      }
-
-      if (btnEditPersonaEl && chatOverflowDropdown) {
-        btnEditPersonaEl.addEventListener('click', () => {
-          chatOverflowDropdown.style.display = 'none';
-        });
-      }
-
-      if (btnClearChatEl && chatOverflowDropdown) {
-        btnClearChatEl.addEventListener('click', () => {
-          chatOverflowDropdown.style.display = 'none';
-        });
-      }
-
       // Sidebar Tab Switching
       const tabPersonas = document.getElementById('tabPersonas');
       const tabHermes = document.getElementById('tabHermes');
@@ -2479,12 +2859,6 @@
           activeSidebarTab = 'personas';
           tabPersonas.className = 'sidebar-tab-btn active';
           tabHermes.className = 'sidebar-tab-btn';
-          tabPersonas.style.background = 'var(--ax-surface-raised)';
-          tabPersonas.style.borderColor = 'var(--ax-border)';
-          tabPersonas.style.color = 'var(--ax-primary)';
-          tabHermes.style.background = 'transparent';
-          tabHermes.style.borderColor = 'transparent';
-          tabHermes.style.color = 'var(--ax-text-muted)';
           renderUnifiedSidebar();
         };
 
@@ -2492,12 +2866,6 @@
           activeSidebarTab = 'hermes';
           tabHermes.className = 'sidebar-tab-btn active';
           tabPersonas.className = 'sidebar-tab-btn';
-          tabHermes.style.background = 'var(--ax-surface-raised)';
-          tabHermes.style.borderColor = 'var(--ax-border)';
-          tabHermes.style.color = 'var(--ax-primary)';
-          tabPersonas.style.background = 'transparent';
-          tabPersonas.style.borderColor = 'transparent';
-          tabPersonas.style.color = 'var(--ax-text-muted)';
           renderUnifiedSidebar();
         };
       }
@@ -2523,9 +2891,9 @@
       return div.innerHTML;
     }
 
-    // Immediate initial render so agents and sessions appear instantly on launch
+    // Real session selection happens after the native collections have loaded.
     renderUnifiedSidebar();
-    selectItem('persona', 'alex-hormozi_original');
+    showEmptyConversation(null);
 
     // Start
     if (document.readyState === 'loading') {

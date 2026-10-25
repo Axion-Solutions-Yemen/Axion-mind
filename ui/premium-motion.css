@@ -1,185 +1,247 @@
-/* Axion motion: quiet, responsive, and local. No per-token animation. */
+/* Shared interaction feedback. Entrances never delay access to the workspace. */
 :root {
-  --ax-motion-quick: 120ms;
-  --ax-motion-standard: 180ms;
-  --ax-motion-enter: 260ms;
-  --ax-ease-out: cubic-bezier(.16, 1, .3, 1);
-  --ax-ease-control: cubic-bezier(.2, .7, .2, 1);
+  --ax-motion-quick: var(--ax-duration-fast, 140ms);
+  --ax-motion-standard: 200ms;
+  --ax-motion-overlay: 200ms;
+  --ax-motion-dialog: 220ms;
+  --ax-motion-enter: var(--ax-motion-standard);
+  --ax-ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ax-ease-control: var(--ax-ease-out);
 }
 
-/* Transform + opacity only for entrances; no persistent GPU layer hints. */
-@keyframes ax-message-in {
-  from { opacity: 0; transform: translateY(7px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes ax-dialog-in {
-  from { opacity: 0; transform: translateY(10px) scale(.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes ax-menu-in {
-  from { opacity: 0; transform: translateY(5px) scale(.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes ax-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+button, [role="button"], summary, .btn-new-agent-chat,
+.agent-card, .agent-card-header, .persona-item, .sub-session-item,
+.chat-model-menu-item, .starter-card, .tool-card, .thinking-accordion,
+.form-input, .form-textarea, .search-input, select, input[type="checkbox"],
+.input-box, .status-badge, .agent-sessions-count, .count-badge {
+  transition: color var(--ax-motion-quick) ease-out,
+    background-color var(--ax-motion-quick) ease-out,
+    border-color var(--ax-motion-quick) ease-out,
+    opacity var(--ax-motion-quick) ease-out;
 }
 
-.message-row.motion-new {
-  animation: ax-message-in var(--ax-motion-enter) var(--ax-ease-out);
-}
-/* Existing history stays still; only fresh sends receive motion-new. */
-.modal-backdrop.open {
-  animation: ax-fade-in var(--ax-motion-standard) ease-out;
-}
-.modal-backdrop.open > .modal-card {
-  animation: ax-dialog-in var(--ax-motion-enter) var(--ax-ease-out);
-  transform-origin: center;
-}
-#chatModelDropdownMenu {
-  animation: ax-menu-in var(--ax-motion-standard) var(--ax-ease-out);
-  transform-origin: top left;
-}
-.empty-state {
-  animation: ax-message-in 320ms var(--ax-ease-out);
-}
-.live-reasoning:not([hidden]) {
-  animation: ax-fade-in var(--ax-motion-standard) ease-out;
-}
-/* Never animate live-answer descendants: markdown is rebuilt each frame. */
+/* State changes keep Send's primary fill immediate; press feedback stays spatially tiny. */
+#btnSend, #btnStop { transition: transform 120ms var(--ax-ease-out), opacity 120ms ease-out; }
+#btnSend:not(:disabled):active, #btnStop:not(:disabled):active { transform: translateY(1px); }
 
-:is(.btn-action, .btn-primary, .btn-secondary, .btn-new-persona,
-    .btn-new-agent-chat, .btn-send, .btn-stop, .btn-close-modal, .quick-model-btn) {
-  transition: transform var(--ax-motion-quick) var(--ax-ease-control),
-    background-color var(--ax-motion-standard) ease,
-    border-color var(--ax-motion-standard) ease,
-    color var(--ax-motion-quick) ease,
-    opacity var(--ax-motion-quick) ease;
+.sidebar-tab-btn, .persona-navigation-item, .sub-session-item, .persona-selector {
+  transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out;
 }
-@media (hover: hover) and (pointer: fine) {
-  :is(.btn-action, .btn-primary, .btn-secondary, .btn-new-persona,
-      .btn-new-agent-chat, .btn-send, .quick-model-btn):not(:disabled):hover {
-    transform: translateY(-1px);
-  }
-  .starter-card:hover { transform: translateY(-2px); }
-  :is(.agent-card-header, .persona-item, .sub-session-item):hover {
-    border-color: var(--ax-border);
-  }
-}
-:is(.btn-action, .btn-primary, .btn-secondary, .btn-new-persona,
-    .btn-new-agent-chat, .btn-send, .btn-stop, .btn-close-modal,
-    .quick-model-btn):not(:disabled):active {
-  transform: translateY(0) scale(.97);
-  transition-duration: 70ms;
-}
-:is(.agent-card, .agent-card-header, .persona-item, .sub-session-item,
-    .chat-model-menu-item, .starter-card, .tool-card, .thinking-accordion) {
-  transition: background-color var(--ax-motion-standard) ease,
-    border-color var(--ax-motion-standard) ease,
-    color var(--ax-motion-quick) ease,
-    transform var(--ax-motion-standard) var(--ax-ease-out);
-}
-.input-box {
-  transition: border-color var(--ax-motion-standard) ease,
-    background-color var(--ax-motion-standard) ease;
-}
-.input-box:focus-within {
-  border-color: var(--ax-primary);
-  outline: 2px solid color-mix(in srgb, var(--ax-primary) 12%, transparent);
-  outline-offset: 2px;
-}
-:where(button, [role="button"], summary):focus-visible {
+
+:where(button, [role="button"], summary, a[href], [tabindex]):not(input, textarea, select):focus-visible {
   outline: 2px solid var(--ax-focus);
   outline-offset: 3px;
 }
-/* Full-workspace interaction layer. No timers or per-token observers. */
-button:not(:disabled), [role="button"], summary, .btn-new-agent-chat,
-.agent-card-header, .sub-session-item, .starter-card {
-  transition: transform var(--ax-motion-quick) var(--ax-ease-control),
-    opacity var(--ax-motion-standard) ease,
-    color var(--ax-motion-standard) ease,
-    background-color var(--ax-motion-standard) ease,
-    border-color var(--ax-motion-standard) ease;
+
+/* Fields retain their normal borders; keyboard focus uses a quiet surface cue. */
+html :is(input, textarea, select):focus,
+html :is(#conferenceView, #conferenceDialog) :is(input, textarea, select):focus {
+  outline: none;
+  box-shadow: none;
 }
-button:not(:disabled):active, [role="button"]:active,
-.agent-card-header:active, .sub-session-item:active { transform: scale(.98); }
-button:disabled { transition: opacity var(--ax-motion-standard) ease; }
-.form-input, .form-textarea, .search-input, select, input[type="checkbox"] {
-  transition: border-color var(--ax-motion-standard) ease,
-    background-color var(--ax-motion-standard) ease,
-    color var(--ax-motion-standard) ease, opacity var(--ax-motion-standard) ease;
+html :is(input, textarea, select):not(.chat-textarea):focus-visible,
+html :is(#conferenceView, #conferenceDialog) :is(input, textarea, select):focus-visible {
+  background-color: color-mix(in srgb, var(--ax-surface) 94%, var(--ax-text));
 }
-:is(.form-input, .form-textarea, .search-input, select):focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--ax-focus) 40%, transparent);
-  outline-offset: 2px;
+
+html input:is([type="checkbox"], [type="radio"]):focus-visible {
+  filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--ax-text) 28%, transparent));
 }
-input[type="checkbox"] { accent-color: var(--ax-primary); }
-.status-badge, .message-model-badge, .agent-sessions-count, .count-badge {
-  transition: color var(--ax-motion-standard) ease,
-    background-color var(--ax-motion-standard) ease,
-    border-color var(--ax-motion-standard) ease;
-}
+
+input[type="checkbox"] { accent-color: var(--ax-action); }
+
+/* Disclosure rotation follows the existing expanded state. */
 .agent-toggle, .tool-card-toggle, .thinking-toggle {
   transition: transform var(--ax-motion-standard) var(--ax-ease-out);
 }
-/* Display transitions keep closing surfaces rendered until the fade finishes. */
+/* Keep the responsive sidebar on the compositor, using its existing open class. */
+@media (max-width: 768px) {
+  .sidebar { left: 0; transform: translateX(-100%); transition: transform var(--ax-motion-standard) var(--ax-ease-out); }
+  .sidebar.open { left: 0; transform: none; }
+}
+
+/* State classes and native lifecycles continue to own visibility and focus. */
+.modal-backdrop:not(.open) { pointer-events: none; }
 @supports (transition-behavior: allow-discrete) {
   .modal-backdrop {
     opacity: 0;
-    transition: opacity 160ms ease, display 160ms allow-discrete;
+    transition: opacity var(--ax-motion-dialog) var(--ax-ease-out),
+      display var(--ax-motion-dialog) allow-discrete;
   }
   .modal-backdrop.open { opacity: 1; }
-  .modal-backdrop:not(.open) { pointer-events: none; }
-  @starting-style { .modal-backdrop.open { opacity: 0; } }
-}
-.agent-sessions-container, .tool-card-body {
-  opacity: 0;
-  transform: translateY(-3px);
-  transition: opacity var(--ax-motion-standard) ease,
-    transform var(--ax-motion-standard) var(--ax-ease-out),
-    display var(--ax-motion-standard) allow-discrete;
-}
-.agent-card.expanded .agent-sessions-container,
-.tool-card.open .tool-card-body { opacity: 1; transform: translateY(0); }
-@starting-style {
-  .agent-card.expanded .agent-sessions-container,
-  .tool-card.open .tool-card-body { opacity: 0; transform: translateY(-3px); }
-}
-/* Height interpolation is limited to explicit accordion clicks, never chat. */
-@supports (interpolate-size: allow-keywords) {
-  .agent-sessions-container {
-    interpolate-size: allow-keywords;
-    height: 0;
-    transition: height 220ms var(--ax-ease-out), opacity 180ms ease,
-      display 220ms allow-discrete;
+  .modal-backdrop > .modal-card {
+    opacity: 0;
+    transform: translateY(6px) scale(.98);
+    transition: opacity var(--ax-motion-dialog) var(--ax-ease-out),
+      transform var(--ax-motion-dialog) var(--ax-ease-out);
   }
-  .agent-card.expanded .agent-sessions-container { height: auto; }
-  @starting-style { .agent-card.expanded .agent-sessions-container { height: 0; } }
+  .modal-backdrop.open > .modal-card { opacity: 1; transform: none; }
+  #chatModelDropdownMenu {
+    opacity: 0;
+    transform: translateY(5px);
+    transition: opacity var(--ax-motion-overlay) var(--ax-ease-out),
+      transform var(--ax-motion-overlay) var(--ax-ease-out),
+      display var(--ax-motion-overlay) allow-discrete;
+  }
+  #chatModelDropdownMenu[style*="display: block"] { opacity: 1; transform: none; }
+  #chatModelDropdownMenu[style*="display: none"] { pointer-events: none; }
+  dialog#conferenceDialog {
+    opacity: 0;
+    transform: translateY(6px) scale(.98);
+    transition: opacity var(--ax-motion-dialog) var(--ax-ease-out),
+      transform var(--ax-motion-dialog) var(--ax-ease-out),
+      display var(--ax-motion-dialog) allow-discrete,
+      overlay var(--ax-motion-dialog) allow-discrete;
+  }
+  dialog#conferenceDialog[open] { opacity: 1; transform: none; }
+  dialog#conferenceDialog:not([open]), dialog#conferenceDialog:not([open])::backdrop { pointer-events: none; }
+  dialog#conferenceDialog::backdrop {
+    opacity: 0;
+    transition: opacity var(--ax-motion-dialog) var(--ax-ease-out),
+      display var(--ax-motion-dialog) allow-discrete,
+      overlay var(--ax-motion-dialog) allow-discrete;
+  }
+  dialog#conferenceDialog[open]::backdrop { opacity: 1; }
+  .persona-history.is-disclosing .agent-sessions-container {
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity var(--ax-motion-standard) var(--ax-ease-out),
+      transform var(--ax-motion-standard) var(--ax-ease-out),
+      display var(--ax-motion-standard) allow-discrete;
+  }
+  .persona-history.is-disclosing.expanded .agent-sessions-container { opacity: 1; transform: none; }
+  .persona-history.is-disclosing:not(.expanded) .agent-sessions-container { pointer-events: none; }
+  @starting-style {
+    .modal-backdrop.open, dialog#conferenceDialog[open]::backdrop { opacity: 0; }
+    .modal-backdrop.open > .modal-card, dialog#conferenceDialog[open] { opacity: 0; transform: translateY(6px) scale(.98); }
+    #chatModelDropdownMenu[style*="display: block"] { opacity: 0; transform: translateY(5px); }
+    .persona-history.is-disclosing.expanded .agent-sessions-container { opacity: 0; transform: translateY(-4px); }
+  }
 }
-.live-reasoning[open] .live-reasoning-text {
-  animation: ax-fade-in var(--ax-motion-standard) ease-out;
+@supports not (transition-behavior: allow-discrete) {
+  .modal-backdrop.open > .modal-card { animation: axion-dialog-arrive 220ms var(--ax-ease-out); }
+  #chatModelDropdownMenu[style*="display: block"] { animation: axion-content-reveal 180ms var(--ax-ease-out); }
+  .persona-history.is-disclosing.expanded .agent-sessions-container { animation: axion-content-reveal 180ms var(--ax-ease-out); }
 }
-.starter-prompts .starter-card { animation: ax-message-in 280ms var(--ax-ease-out); }
-.starter-prompts .starter-card:nth-child(2) { animation-duration: 340ms; }
-.starter-prompts .starter-card:nth-child(3) { animation-duration: 400ms; }
-.btn-scroll-bottom { transition: opacity 160ms ease, transform 180ms var(--ax-ease-out); }
-@media (hover: hover) and (pointer: fine) {
-  button:not(:disabled):hover { translate: 0 -1px; }
-  .agent-card-header:hover .agent-avatar { transform: scale(1.06); }
-  .sub-session-item:hover .sub-session-icon { opacity: 1; }
+@keyframes axion-dialog-arrive {
+  from { opacity: 0; transform: translateY(6px) scale(.98); }
+  to { opacity: 1; transform: none; }
 }
-.agent-avatar, .sub-session-icon {
-  transition: transform 180ms var(--ax-ease-out), opacity 180ms ease;
+@keyframes axion-content-reveal {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
 }
 
-/* Honor accessibility preferences, including pre-existing spinner/dot effects.
-   Do not disable auto-follow: it is a functional, instant scroll operation. */
+/* Only disclosure state changes animate; growing streamed content stays intrinsic. */
+.thinking-grid { transition: grid-template-rows var(--ax-motion-standard) var(--ax-ease-out); }
+.thinking-content-inner {
+  opacity: 0;
+  transition: opacity var(--ax-motion-standard) ease-out,
+    padding-block var(--ax-motion-standard) var(--ax-ease-out),
+    border-top-width var(--ax-motion-standard) var(--ax-ease-out);
+}
+.thinking-accordion.open .thinking-content-inner { opacity: 1; }
+.live-reasoning > .thinking-header::after { transition: transform var(--ax-motion-standard) var(--ax-ease-out); }
+.tool-card.open > .tool-card-body, .live-reasoning[open] > .live-reasoning-text {
+  animation: axion-content-reveal var(--ax-motion-standard) var(--ax-ease-out);
+}
+@supports (interpolate-size: allow-keywords) and (transition-behavior: allow-discrete) {
+  .tool-card > .tool-card-body {
+    interpolate-size: allow-keywords;
+    height: 0;
+    padding-block: 0;
+    border-top-width: 0;
+    opacity: 0;
+    transition: height var(--ax-motion-standard) var(--ax-ease-out),
+      padding-block var(--ax-motion-standard) var(--ax-ease-out),
+      border-top-width var(--ax-motion-standard) var(--ax-ease-out),
+      opacity var(--ax-motion-standard) ease-out,
+      display var(--ax-motion-standard) allow-discrete;
+  }
+  .tool-card.open > .tool-card-body { height: auto; opacity: 1; padding-block: 12px; border-top-width: 1px; animation: none; }
+  @starting-style {
+    .tool-card.open > .tool-card-body { height: 0; opacity: 0; padding-block: 0; border-top-width: 0; }
+  }
+  @supports selector(details::details-content) {
+    .thinking-accordion::details-content {
+      interpolate-size: allow-keywords;
+      block-size: 0;
+      opacity: 0;
+      overflow: clip;
+      transition: block-size var(--ax-motion-standard) var(--ax-ease-out),
+        opacity var(--ax-motion-standard) ease-out,
+        content-visibility var(--ax-motion-standard) allow-discrete;
+    }
+    .thinking-accordion[open]::details-content { block-size: auto; opacity: 1; }
+    .live-reasoning[open] > .live-reasoning-text { animation: none; }
+  }
+}
+
+/* Theme interpolation is bounded to a user toggle, never a transcript rerender. */
+html.is-theme-changing :is(body, .sidebar, .icon-rail, .navigation-panel, .chat-view,
+  .chat-header, .input-box, .modal-card, .modal-header, .modal-body, .modal-footer,
+  .menu-surface, .menu-search, .menu-custom, .form-input, .form-textarea, .search-input,
+  .tool-card-body, .thinking-content-inner, .thinking-header, .message-content,
+  .persona-selector, .conversation-search-field, .account-storage-status) {
+  transition: background-color 180ms ease-out, color 180ms ease-out,
+    border-color 180ms ease-out, box-shadow 180ms ease-out;
+}
+/* Opposing primary pairs and technical content switch together, without gray fills. */
+html.is-theme-changing :is(.btn-primary, .btn-send, .btn-stop, .btn-save,
+  .sidebar-tab-btn.active, pre, pre *, code, code *) { transition: none; }
+
+.thinking-live-indicator::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
+  animation: axion-waiting 1200ms ease-in-out infinite;
+}
+@keyframes axion-waiting { 0%, 100% { opacity: .4; } 50% { opacity: .9; } }
+.btn-scroll-bottom {
+  transition: opacity var(--ax-motion-quick) ease-out,
+    border-color var(--ax-motion-quick) ease-out,
+    color var(--ax-motion-quick) ease-out;
+}
+
+/* Only the offset piece moves, and only while an existing operation is busy. */
+.axion-mark.is-busy .axion-mark-secondary {
+  animation: axion-mark-activity 1400ms ease-in-out infinite;
+}
+@keyframes axion-mark-activity {
+  0%, 100% { transform: translate(0, 0); opacity: 1; }
+  50% { transform: translate(2px, -1px); opacity: .72; }
+}
+
+/* Remaining product surfaces reuse the shared motion vocabulary. */
+#updateProgressBar { transition: width var(--ax-motion-quick) ease-out; }
+#updateProgressTrack[data-indeterminate="true"]::after,
+#updateModal[data-update-state="checking"] .dialog-heading > .ui-icon {
+  animation: axion-waiting 1200ms ease-in-out infinite;
+}
+#authSyncModal button[aria-busy="true"], #diagnosticsModal button[aria-busy="true"] { cursor: progress; }
+@supports (interpolate-size: allow-keywords) and (transition-behavior: allow-discrete) {
+  @supports selector(details::details-content) {
+    .conference-entry details::details-content {
+      interpolate-size: allow-keywords;
+      block-size: 0;
+      opacity: 0;
+      overflow: clip;
+      transition: block-size var(--ax-motion-standard) var(--ax-ease-out),
+        opacity var(--ax-motion-standard) ease-out,
+        content-visibility var(--ax-motion-standard) allow-discrete;
+    }
+    .conference-entry details[open]::details-content { block-size: auto; opacity: 1; }
+  }
+}
+
+/* Functional scroll following is owned by the existing chat controller. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
   }
-  :is(button, .starter-card):hover,
-  :is(button, .starter-card):active { transform: none !important; translate: none !important; }
 }
