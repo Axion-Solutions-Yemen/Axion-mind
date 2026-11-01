@@ -24,6 +24,7 @@ pub fn cancel(id: Option<&str>) {
         }
     }
 }
+pub fn cancel_all() { if let Ok(r)=registry().lock() { for sender in r.active.values() {sender.send_replace(true);} } }
 impl RequestGuard {
     pub async fn run<T, F: Future<Output=Result<T,String>>>(&mut self, future:F) -> Result<T,String> {
         let receiver=&mut self.receiver;

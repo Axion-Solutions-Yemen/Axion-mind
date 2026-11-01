@@ -45,55 +45,26 @@ pub struct ChatMessage {
 }
 
 pub fn get_app_data_dir() -> Result<PathBuf, String> {
-    // 1. Check if user configured a custom storage location (e.g. OneDrive, Google Drive, D:\Backups)
-    let config = crate::config::load_config();
-    if crate::app_paths::sandbox()?.is_none() {
-    if let Some(ref custom_dir) = config.custom_storage_dir {
-        let trimmed = custom_dir.trim();
-        if !trimmed.is_empty() {
-            let custom_path = PathBuf::from(trimmed);
-            if fs::create_dir_all(&custom_path).is_ok() {
-                let _ = fs::create_dir_all(custom_path.join("chats"));
-                let _ = fs::create_dir_all(custom_path.join("sessions"));
-                return Ok(custom_path);
-            }
-        }
-    }
+    Ok(crate::identity::current()?.vault)
+}
 
+pub fn require_session(session_id: &str) -> Result<(), String> {
+    crate::resource_id::validate(session_id)?;
+    let root=get_app_data_dir()?;
+    for entry in fs::read_dir(root.join("sessions")).map_err(|e|e.to_string())? {
+        let path=entry.map_err(|e|e.to_string())?.path();crate::identity::check_path(&path)?;
+        if path.extension().and_then(|e|e.to_str())!=Some("json") {continue;}
+        let rows:Vec<AgentSessionMeta>=serde_json::from_str(&fs::read_to_string(path).map_err(|e|e.to_string())?).map_err(|e|e.to_string())?;
+        if rows.iter().any(|s|s.id==session_id) {return Ok(());}
     }
-    let hub_dir = crate::app_paths::hub()?;
-    fs::create_dir_all(hub_dir.join("chats")).map_err(|e| e.to_string())?;
-    fs::create_dir_all(hub_dir.join("sessions")).map_err(|e| e.to_string())?;
-    Ok(hub_dir)
+    Err("Conversation does not belong to the current account".into())
 }
 
 pub fn list_agent_sessions(agent_id: &str) -> Result<Vec<AgentSessionMeta>, String> {
+    crate::resource_id::validate(agent_id)?;
     let hub_dir = get_app_data_dir()?;
     let meta_file = hub_dir.join("sessions").join(format!("{}.json", agent_id));
     if !meta_file.exists() {
-        // Auto-migrate legacy single-chat file if present
-        let legacy_file = PathBuf::from(r"D:\Side-Projects\StartUp\personas_hub\chats").join(format!("{}.json", agent_id));
-        if crate::app_paths::sandbox()?.is_none() && legacy_file.exists() {
-            if let Ok(content) = fs::read_to_string(&legacy_file) {
-                if let Ok(msgs) = serde_json::from_str::<Vec<ChatMessage>>(&content) {
-                    if !msgs.is_empty() {
-                        let sess_id = format!("{}_legacy", agent_id);
-                        let _ = fs::write(hub_dir.join("chats").join(format!("{}.json", sess_id)), &content);
-                        let meta = AgentSessionMeta {
-                            id: sess_id,
-                            agent_id: agent_id.to_string(),
-                            title: format!("Previous Conversation ({} msgs)", msgs.len()),
-                            created_at: "1792289511".to_string(),
-                            last_activity_at: "1792353827".to_string(),
-                            message_count: msgs.len(),
-                        };
-                        let list = vec![meta];
-                        let _ = fs::write(&meta_file, serde_json::to_string_pretty(&list).unwrap_or_default());
-                        return Ok(list);
-                    }
-                }
-            }
-        }
         return Ok(Vec::new());
     }
     let content = fs::read_to_string(&meta_file).map_err(|e| e.to_string())?;
@@ -101,6 +72,7 @@ pub fn list_agent_sessions(agent_id: &str) -> Result<Vec<AgentSessionMeta>, Stri
 }
 
 pub fn create_agent_session(agent_id: &str, title: Option<&str>) -> Result<AgentSessionMeta, String> {
+    crate::resource_id::validate(agent_id)?;
     let hub_dir = get_app_data_dir()?;
     let sessions_dir = hub_dir.join("sessions");
     fs::create_dir_all(&sessions_dir).map_err(|e| e.to_string())?;
@@ -137,14 +109,18 @@ pub fn create_agent_session(agent_id: &str, title: Option<&str>) -> Result<Agent
 
     // Create empty chat file
     let chat_file = hub_dir.join("chats").join(format!("{}.json", session_id));
+    crate::identity::check_path(&chat_file)?;
     let _ = fs::write(chat_file, "[]");
 
     Ok(new_meta)
 }
 
 pub fn load_chat(session_id: &str) -> Result<Vec<ChatMessage>, String> {
+    require_session(session_id)?;
+    crate::resource_id::validate(session_id)?;
     let hub_dir = get_app_data_dir()?;
     let chat_file = hub_dir.join("chats").join(format!("{}.json", session_id));
+    crate::identity::check_path(&chat_file)?;
 
     if !chat_file.exists() {
         return Ok(Vec::new());
@@ -155,8 +131,11 @@ pub fn load_chat(session_id: &str) -> Result<Vec<ChatMessage>, String> {
 }
 
 pub fn save_chat(session_id: &str, messages: &[ChatMessage]) -> Result<(), String> {
+    require_session(session_id)?;
+    crate::resource_id::validate(session_id)?;
     let hub_dir = get_app_data_dir()?;
     let chat_file = hub_dir.join("chats").join(format!("{}.json", session_id));
+    crate::identity::check_path(&chat_file)?;
     let content = serde_json::to_string_pretty(messages).map_err(|e| e.to_string())?;
     fs::write(chat_file, content).map_err(|e| e.to_string())?;
 
@@ -182,44 +161,10 @@ pub fn save_chat(session_id: &str, messages: &[ChatMessage]) -> Result<(), Strin
     Ok(())
 }
 
-const EMBEDDED_BUNDLE: &str = include_str!("../embedded_data/embedded_bundle.json");
-
-#[derive(Deserialize)]
-struct EmbeddedBundle {
-    personas_json: String,
-    data_files: std::collections::HashMap<String, String>,
-}
-
 pub fn load_personas() -> Result<Vec<Persona>, String> {
-    let hub_dir = get_app_data_dir()?;
-    let personas_file = hub_dir.join("personas.json");
-    let personas_data_dir = hub_dir.join("personas_data");
-
-    // Automatically unpack embedded personas & knowledge cards on clean installs
-    if let Ok(bundle) = serde_json::from_str::<EmbeddedBundle>(EMBEDDED_BUNDLE) {
-        // 1. Unpack Knowledge Cards (frameworks, anecdotes, style_dna, refusals)
-        for (rel_path, content) in &bundle.data_files {
-            let target_path = personas_data_dir.join(rel_path.replace('/', std::path::MAIN_SEPARATOR_STR));
-            if !target_path.exists() {
-                if let Some(parent) = target_path.parent() {
-                    let _ = fs::create_dir_all(parent);
-                }
-                let _ = fs::write(&target_path, content);
-            }
-        }
-
-        // 2. Unpack master personas.json strictly if it does NOT exist on disk
-        if !personas_file.exists() {
-            let _ = fs::write(&personas_file, &bundle.personas_json);
-        }
-    }
-
-    if !personas_file.exists() {
-        return Ok(Vec::new());
-    }
-
-    let content = fs::read_to_string(&personas_file).map_err(|e| e.to_string())?;
-    serde_json::from_str::<Vec<Persona>>(&content).map_err(|e| e.to_string())
+    let path=get_app_data_dir()?.join("personas.json");crate::identity::check_path(&path)?;
+    if !path.exists() {fs::write(&path,"[]").map_err(|e|e.to_string())?;}
+    serde_json::from_str(&fs::read_to_string(path).map_err(|e|e.to_string())?).map_err(|e|e.to_string())
 }
 
 pub fn save_personas(personas: &[Persona]) -> Result<(), String> {

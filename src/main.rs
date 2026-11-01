@@ -11,18 +11,98 @@ mod chat_store;
 mod updater;
 
 #[tauri::command]
-fn get_chat_storage_scope() -> Result<String, String> { backup::scope_id(&personas::get_app_data_dir()?) }
+fn get_chat_storage_scope() -> Result<String, String> { identity::token() }
 
 #[tauri::command]
 async fn append_persona_turn(session_id:String, request_id:String, message:String, response:String, model:Option<String>, scope:String) -> Result<(),String> {
     tokio::task::spawn_blocking(move || {
         let root=personas::get_app_data_dir()?;
-        if backup::scope_id(&root)? != scope { return Err("Storage changed during generation. Restore the original storage location before retrying this save.".into()); }
+        if identity::token()? != scope { return Err("Storage changed during generation. Restore the original storage location before retrying this save.".into()); }
+        personas::require_session(&session_id)?;
         chat_store::append_turn(&root,&session_id,&request_id,&message,&response,model.as_deref())
     }).await.map_err(|_|"Chat storage task failed".to_string())?
 }
 mod logger;
 mod personas;
+mod conversation_context;
+mod resource_id;
+mod knowledge;
+mod identity;
+mod provider;
+
+fn knowledge_store() -> Result<(knowledge::Store, String), String> {
+    let principal=identity::current()?;
+    let root = principal.vault;
+    let owner = principal.id;
+    identity::check_path(&root.join("knowledge.sqlite"))?;
+    Ok((knowledge::Store::open(&root.join("knowledge.sqlite"))?, owner))
+}
+
+#[tauri::command]
+fn knowledge_propose(scope: String, fact: String, source: String) -> Result<i64, String> {
+    resource_id::validate(&scope)?;
+    let (mut store, owner) = knowledge_store()?;
+    store.propose(&owner, &scope, &fact, &source)
+}
+#[tauri::command]
+fn knowledge_approve(id: i64) -> Result<(), String> {
+    let (mut store, owner) = knowledge_store()?; store.approve(&owner, id)
+}
+#[tauri::command]
+fn knowledge_correct(id: i64, fact: String, source: String) -> Result<i64, String> {
+    chat_cancel::cancel_all();
+    let (mut store, owner) = knowledge_store()?; store.correct(&owner, id, &fact, &source)
+}
+#[tauri::command]
+fn knowledge_forget(id: i64) -> Result<(), String> {
+    chat_cancel::cancel_all();
+    let (mut store, owner) = knowledge_store()?; store.forget(&owner, id)
+}
+
+#[tauri::command]
+fn knowledge_disclosure(consultant:String,scope:String)->Result<serde_json::Value,String>{
+    resource_id::validate(&scope)?;resource_id::validate(&consultant)?;
+    let (store,owner)=knowledge_store()?;
+    match provider::resolve(&config::load_config()) {
+        Ok(destination)=>Ok(serde_json::json!({"principal":identity::current()?,"allowed":store.provider_allowed(&owner,&destination.key)?,"shared":store.shared(&owner,&scope,&consultant,&destination.key)?,"provider":destination})),
+        Err(reason)=>Ok(serde_json::json!({"principal":identity::current()?,"allowed":false,"shared":false,"provider":null,"reason":reason}))
+    }
+}
+#[tauri::command]
+fn knowledge_provider_consent(provider_key:String,allowed:bool)->Result<(),String>{
+    let destination=provider::resolve(&config::load_config())?;
+    if destination.key!=provider_key{return Err("Provider changed. Review its disclosure again.".into());}
+    chat_cancel::cancel_all();let (mut store,owner)=knowledge_store()?;store.allow_provider(&owner,&destination.key,allowed)
+}
+#[tauri::command]
+fn knowledge_share(scope:String,consultant:String,provider_key:String,allowed:bool)->Result<(),String>{
+    resource_id::validate(&scope)?;resource_id::validate(&consultant)?;
+    if !personas::load_personas()?.iter().any(|p|p.id==consultant){return Err("Unknown consultant".into());}
+    let destination=provider::resolve(&config::load_config())?;
+    if destination.key!=provider_key{return Err("Provider changed. Review its disclosure again.".into());}
+    chat_cancel::cancel_all();let (mut store,owner)=knowledge_store()?;store.share(&owner,&scope,&consultant,&destination.key,allowed)
+}
+#[tauri::command]
+fn knowledge_export()->Result<serde_json::Value,String>{let (store,owner)=knowledge_store()?;store.snapshot(&owner)}
+#[tauri::command]
+fn knowledge_restore(snapshot:serde_json::Value)->Result<(),String>{
+    if serde_json::to_vec(&snapshot).map_err(|e|e.to_string())?.len()>4*1024*1024{return Err("Knowledge backup exceeds 4 MiB".into());}
+    chat_cancel::cancel_all();let (mut store,owner)=knowledge_store()?;store.restore(&owner,&snapshot)
+}
+#[tauri::command]
+fn onboarding_status()->Result<serde_json::Value,String>{let (store,owner)=knowledge_store()?;Ok(serde_json::json!({"completed":store.preference(&owner,"onboarding")?.is_some(),"principal":identity::current()?}))}
+#[tauri::command]
+fn complete_onboarding(answers:Vec<String>)->Result<(),String>{
+    if answers.len()>6||answers.iter().any(|a|a.len()>1000){return Err("Onboarding accepts up to six short optional answers".into());}
+    let (mut store,owner)=knowledge_store()?;
+    for (i,answer) in answers.iter().enumerate(){if !answer.trim().is_empty(){store.propose(&owner,"personal",answer,&format!("onboarding:user-reviewed:question-{}",i+1))?;}}
+    store.set_preference(&owner,"onboarding","reviewed-or-skipped")
+}
+#[tauri::command]
+fn knowledge_list(scope: String) -> Result<Vec<knowledge::Fact>, String> {
+    resource_id::validate(&scope)?;
+    let (store, owner) = knowledge_store()?; store.inspect(&owner, &scope)
+}
 
 use personas::{ChatMessage, Persona};
 use tauri::ipc::Channel;
@@ -117,13 +197,15 @@ async fn stream_hermes_chat(
 #[tauri::command]
 async fn stream_persona_chat(
     persona_id: String,
+    session_id: String,
     message: String,
     system_prompt: String,
     model: Option<String>,
     on_event: Channel<llm::ChatStreamEvent>,
     request_id: Option<String>,
+    knowledge_scope: Option<String>,
 ) -> Result<(), String> {
-    llm::stream_persona_chat(&persona_id, &message, &system_prompt, model.as_deref(), on_event, request_id).await
+    llm::stream_persona_chat(&persona_id, &session_id, &message, &system_prompt, model.as_deref(), on_event, request_id, knowledge_scope.as_deref().unwrap_or("personal")).await
 }
 
 #[tauri::command]
@@ -652,7 +734,7 @@ async fn get_user_cloud_session() -> Result<Option<serde_json::Value>, String> {
     let saved = match store.read()? { Some(s) => s, None => return Ok(None) };
     let verified = auth::AuthApi::production()?.validate_or_refresh(&saved).await?;
     if let Some(session) = &verified { store.write(session)?; }
-    else { store.clear()?; }
+    else { store.clear()?; identity::invalidate(); chat_cancel::cancel_all(); }
     Ok(verified)
 }
 
@@ -662,6 +744,7 @@ async fn save_user_cloud_session(session: serde_json::Value) -> Result<(), Strin
     let verified = auth::AuthApi::production()?.validate_session(&session).await?
         .ok_or("The account session could not be verified. Please sign in again.")?;
     auth::SessionStore::production()?.write(&verified)?;
+    identity::invalidate(); chat_cancel::cancel_all();
     logger::log_info("AUTH", "Verified account session saved with Windows DPAPI encryption.");
     Ok(())
 }
@@ -671,6 +754,7 @@ async fn clear_user_cloud_session() -> Result<(), String> {
     auth::AUTH_FLOWS.cancel()?;
     let _lock = ACCOUNT_SESSION_LOCK.lock().await;
     auth::SessionStore::production()?.clear()?;
+    identity::invalidate(); chat_cancel::cancel_all();
     logger::log_info("AUTH", "Local account session cleared. Cloud data was not deleted.");
     Ok(())
 }
@@ -686,6 +770,7 @@ async fn sign_in_with_google(app: tauri::AppHandle) -> Result<serde_json::Value,
         Ok(session) => {
             let _lock = ACCOUNT_SESSION_LOCK.lock().await;
             auth::SessionStore::production()?.write(&session)?;
+            identity::invalidate(); chat_cancel::cancel_all();
             logger::log_info("AUTH", "Google account verified; encrypted session saved. Data sync is separate.");
             Ok(session)
         },
@@ -732,6 +817,18 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             get_personas,
+            knowledge_disclosure,
+            knowledge_provider_consent,
+            knowledge_share,
+            knowledge_export,
+            knowledge_restore,
+            onboarding_status,
+            complete_onboarding,
+            knowledge_propose,
+            knowledge_approve,
+            knowledge_correct,
+            knowledge_forget,
+            knowledge_list,
             open_chat_link,
             save_all_personas,
             list_agent_sessions,

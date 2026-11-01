@@ -1,0 +1,955 @@
+{
+  "packages": [
+    {
+      "id": "AX01",
+      "priority": "P0",
+      "area": "Foundation",
+      "depends_on": [],
+      "title": "Freeze and reconcile the current baseline",
+      "implementation": "Capture source revision, dirty-file manifest and customer-data hashes without copying secrets into reports. Reconcile the unexplained existing chat/session baseline differences with the owner; preserve originals and isolate a disposable test data root.",
+      "acceptance": [
+        "Baseline manifest identifies source and candidate independently; no running customer process is restarted.",
+        "A restore rehearsal reproduces the captured synthetic baseline; unexplained customer differences remain an explicit release blocker."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Baseline manifest identifies source and candidate independently; no running customer process is restarted.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "A restore rehearsal reproduces the captured synthetic baseline; unexplained customer differences remain an explicit release blocker.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX02",
+      "priority": "P0",
+      "area": "Foundation",
+      "depends_on": [
+        "AX01"
+      ],
+      "title": "Prove the supported Hermes runtime contract",
+      "implementation": "Probe the installed Hermes version and documented capabilities in a disposable environment. Compare a supported TUI gateway adapter with API run endpoints; demonstrate sessions, history, tools, clarification, approval and cancellation. Record a capability matrix and choose one primary adapter in an ADR.",
+      "acceptance": [
+        "A real isolated run survives a second turn and emits tool events and a terminal state.",
+        "Missing capabilities disable associated controls; an unsupported endpoint yields a helpful error rather than an apparent success."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "A real isolated run survives a second turn and emits tool events and a terminal state.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Missing capabilities disable associated controls; an unsupported endpoint yields a helpful error rather than an apparent success.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX03",
+      "priority": "P0",
+      "area": "Conversation",
+      "depends_on": [
+        "AX01"
+      ],
+      "title": "Restore authoritative multi-turn context",
+      "implementation": "For direct consultant mode, accept conversation identity and load the persisted ordered transcript on the trusted backend; build bounded messages including the current user turn exactly once. For Hermes mode, use runtime-owned history, never a second independently replayed transcript.",
+      "acceptance": [
+        "A synthetic fact introduced in turn one is available in turn three and after restart.",
+        "Concurrent conversations and personas do not leak facts; failed turns and retries never duplicate the current user message."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "PARTIAL",
+      "evidence": [
+        "tests/conversation_context.rs",
+        "tests/consultant-history.test.cjs",
+        "context-green.log",
+        "native-regression.log",
+        "frontend-regression.log"
+      ],
+      "acceptance_dispositions": [
+        {
+          "criterion": "A synthetic fact introduced in turn one is available in turn three and after restart.",
+          "state": "UNVERIFIED",
+          "reason": "Focused context tests do not establish restart, live runtime, packaged UI, privacy or full-plan acceptance."
+        },
+        {
+          "criterion": "Concurrent conversations and personas do not leak facts; failed turns and retries never duplicate the current user message.",
+          "state": "UNVERIFIED",
+          "reason": "Focused context tests do not establish restart, live runtime, packaged UI, privacy or full-plan acceptance."
+        }
+      ]
+    },
+    {
+      "id": "AX04",
+      "priority": "P0",
+      "area": "Privacy",
+      "depends_on": [
+        "AX02"
+      ],
+      "title": "Create explicit account, workspace and profile boundaries",
+      "implementation": "Define principal/workspace/client ownership in the backend. The cousin gets a separate authorized runtime profile and data root, not the founder profile. Personal memory remains private; approved agency context is independently scoped. No employee access in the pilot.",
+      "acceptance": [
+        "Principal A cannot enumerate, retrieve, export or mutate principal B data through IPC, backup or runtime routes.",
+        "Account changes invalidate pending runs and stale context; no alternate profile is modified without authorization."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Principal A cannot enumerate, retrieve, export or mutate principal B data through IPC, backup or runtime routes.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Account changes invalidate pending runs and stale context; no alternate profile is modified without authorization.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX05",
+      "priority": "P0",
+      "area": "Conversation",
+      "depends_on": [
+        "AX02",
+        "AX03",
+        "AX04"
+      ],
+      "title": "Unify runs, events and durable storage",
+      "implementation": "Introduce a typed backend conversation service with run/request/session identities, append-only events, explicit terminal states, idempotent submission and runtime-to-local mapping. Reconcile uncertain outcomes after reconnect instead of blindly resubmitting.",
+      "acceptance": [
+        "Interrupted delivery followed by reconnect preserves one logical user turn and one reconciled result.",
+        "Cancel during an approval or stream stops the actual runtime; the UI never reports cancellation merely because it stopped drawing tokens."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Interrupted delivery followed by reconnect preserves one logical user turn and one reconciled result.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Cancel during an approval or stream stops the actual runtime; the UI never reports cancellation merely because it stopped drawing tokens.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX06",
+      "priority": "P0",
+      "area": "Memory",
+      "depends_on": [
+        "AX04",
+        "AX05"
+      ],
+      "title": "Implement consented memory records and provenance",
+      "implementation": "Select one authoritative store exposed to Hermes through a scoped service/plugin. Store user-approved facts, candidate inferences, source anchors, confidence, effective dates, sensitivity and access grants. Do not create competing writable persona and Hermes memory copies.",
+      "acceptance": [
+        "An explicit remember operation produces a retrievable approved record with exact source provenance.",
+        "Assistant advice, retrieved instructions and an unconfirmed inference cannot silently become approved user facts."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "PARTIAL",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "An explicit remember operation produces a retrievable approved record with exact source provenance.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Assistant advice, retrieved instructions and an unconfirmed inference cannot silently become approved user facts.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX07",
+      "priority": "P0",
+      "area": "Memory",
+      "depends_on": [
+        "AX06"
+      ],
+      "title": "Build memory inspection, correction and deletion",
+      "implementation": "Add What you know about me, pending candidates, edit/approve/reject and forget controls. Corrections supersede records and invalidate derived summaries/indexes. Deletion purges active retrieval, derived facts and caches; retained backup behavior is explained and restored tombstones are reapplied.",
+      "acceptance": [
+        "A corrected value is returned in a new conversation; the superseded value is not presented as current.",
+        "A forgotten synthetic fact cannot be retrieved by any permitted consultant after restart or restore of an older backup."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "PARTIAL",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "A corrected value is returned in a new conversation; the superseded value is not presented as current.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "A forgotten synthetic fact cannot be retrieved by any permitted consultant after restart or restore of an older backup.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX08",
+      "priority": "P0",
+      "area": "Memory",
+      "depends_on": [
+        "AX06",
+        "AX07"
+      ],
+      "title": "Assemble scoped context with a bounded budget",
+      "implementation": "Resolve identity and grants before retrieval. Keep a stable role prompt; retrieve relevant approved personal/agency/client facts, persona evidence and bounded history as separate provenance-bearing context/tool results. Preserve source records and never compact facts destructively.",
+      "acceptance": [
+        "A new session recalls an authorized synthetic client detail with its source, while a restricted client detail is absent.",
+        "Long-history tests remain within the actual model context limit; stale summaries and revoked grants cannot reintroduce excluded content."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "A new session recalls an authorized synthetic client detail with its source, while a restricted client detail is absent.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Long-history tests remain within the actual model context limit; stale summaries and revoked grants cannot reintroduce excluded content.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX09",
+      "priority": "P0",
+      "area": "Consultants",
+      "depends_on": [
+        "AX08"
+      ],
+      "title": "Deliver two source-backed consultant packs",
+      "implementation": "Version persona identity, specialty, methods, counterexamples, communication style, source licenses and citations. Start with one business-growth consultant and one creative/operations consultant chosen by the user; do not assume the second person. Label unofficial simulation clearly.",
+      "acceptance": [
+        "Each selected factual attribution links to an ingested source span; absent evidence produces uncertainty rather than an invented quote.",
+        "Held-out agency cases show distinct methods without impersonation claims, unsupported biography or rote catchphrase imitation."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Each selected factual attribution links to an ingested source span; absent evidence produces uncertainty rather than an invented quote.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Held-out agency cases show distinct methods without impersonation claims, unsupported biography or rote catchphrase imitation.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX10",
+      "priority": "P0",
+      "area": "Security",
+      "depends_on": [
+        "AX04",
+        "AX05"
+      ],
+      "title": "Enforce scoped action approvals in the backend",
+      "implementation": "Define allowed tools and risk classes. Approval binds principal, workspace, exact action arguments, artifact digest and expiry. Sending, publishing, deletion and shared writes require confirmation; read/draft permission is not write permission. Replace free-form Hermes command dispatch with typed allowlisted operations.",
+      "acceptance": [
+        "Forged renderer approvals, changed recipients, stale approvals and replayed action IDs are refused.",
+        "A real approved disposable write is read back at the exact target; cancellation and retry cannot execute it twice."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Forged renderer approvals, changed recipients, stale approvals and replayed action IDs are refused.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "A real approved disposable write is read back at the exact target; cancellation and retry cannot execute it twice.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX11",
+      "priority": "P0",
+      "area": "Experience",
+      "depends_on": [
+        "AX05",
+        "AX07",
+        "AX09",
+        "AX10"
+      ],
+      "title": "Create a simple Arabic-first home",
+      "implementation": "Expose My Assistant, My Consultants and My Knowledge, with a quiet task/history area. Default to one assistant and two consultant cards, plain Arabic quick actions and human-readable connection status. Hide provider/model jargon in advanced settings.",
+      "acceptance": [
+        "A nontechnical pilot user completes a recall, consultant question and draft task without opening a terminal or model settings.",
+        "Arabic/English mixed content, keyboard navigation, screen-reader labels and 125/150 percent Windows DPI are exercised in the actual packaged UI."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "A nontechnical pilot user completes a recall, consultant question and draft task without opening a terminal or model settings.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Arabic/English mixed content, keyboard navigation, screen-reader labels and 125/150 percent Windows DPI are exercised in the actual packaged UI.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX12",
+      "priority": "P0",
+      "area": "Onboarding",
+      "depends_on": [
+        "AX04",
+        "AX06",
+        "AX11"
+      ],
+      "title": "Provide a reviewable onboarding interview",
+      "implementation": "Collect preferred name, role, language, priorities, working style and agency context through short optional questions. Preview exactly what will be stored and shared. Provide a synthetic sample workspace and a skip path. No automatic import of private messages or founder data.",
+      "acceptance": [
+        "Completing or skipping onboarding leads to a usable assistant; every stored onboarding fact can be inspected or removed.",
+        "Declining cloud processing and document import leaves those data flows disabled and clearly explained."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Completing or skipping onboarding leads to a usable assistant; every stored onboarding fact can be inspected or removed.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Declining cloud processing and document import leaves those data flows disabled and clearly explained.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX13",
+      "priority": "P0",
+      "area": "Deployment",
+      "depends_on": [
+        "AX02",
+        "AX04",
+        "AX10"
+      ],
+      "title": "Remove developer-machine deployment assumptions",
+      "implementation": "Resolve app and runtime resources from supported per-user paths; bundle/version the persona import engine or disable it clearly. Avoid hidden dependency on the founder bridges. Choose an authorized provider and show availability; package a separate pilot profile without personal chats or secrets.",
+      "acceptance": [
+        "A clean Windows account without the developer D drive completes install and a real provider conversation.",
+        "Missing Python, Hermes, provider credentials or network produces a specific recovery path without secret disclosure."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "A clean Windows account without the developer D drive completes install and a real provider conversation.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Missing Python, Hermes, provider credentials or network produces a specific recovery path without secret disclosure.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX14",
+      "priority": "P0",
+      "area": "Quality",
+      "depends_on": [
+        "AX03",
+        "AX05",
+        "AX07",
+        "AX08",
+        "AX09",
+        "AX10"
+      ],
+      "title": "Build the pilot acceptance and adversarial suite",
+      "implementation": "Automate synthetic conversation, memory lifecycle, consultant provenance, scoped retrieval, prompt injection, cancellation and restart cases. Add a rubric for useful Arabic agency answers; separate deterministic assertions from human/model-scored judgment.",
+      "acceptance": [
+        "All required pilot automated checks pass against the packaged candidate with exact revision and artifacts recorded.",
+        "Known-bad context assembly and cross-workspace fixtures fail the suite, proving the test oracles detect those failures."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "All required pilot automated checks pass against the packaged candidate with exact revision and artifacts recorded.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Known-bad context assembly and cross-workspace fixtures fail the suite, proving the test oracles detect those failures.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX15",
+      "priority": "P0",
+      "area": "Pilot",
+      "depends_on": [
+        "AX11",
+        "AX12",
+        "AX13",
+        "AX14"
+      ],
+      "title": "Run the next-meeting demonstration and obtain consent",
+      "implementation": "Use synthetic data before importing an approved minimal agency example. Demonstrate remember/new chat/correct/forget, two consultants and a draft brief. Explain hosting, provider data egress and remaining limitations. Capture user feedback without covert recording.",
+      "acceptance": [
+        "The cousin completes the core workflow herself; real data is used only after informed consent.",
+        "No unmet privacy, runtime, installer or data-preservation blocker is relabeled as complete; scope a supervised demo if installation is not ready."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "The cousin completes the core workflow herself; real data is used only after informed consent.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "No unmet privacy, runtime, installer or data-preservation blocker is relabeled as complete; scope a supervised demo if installation is not ready.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX16",
+      "priority": "P1",
+      "area": "Knowledge",
+      "depends_on": [
+        "AX08",
+        "AX09"
+      ],
+      "title": "Implement safe document ingestion and evidence retrieval",
+      "implementation": "Parse authorized PDF/DOCX/text with size/type limits, malware-aware handling and provenance. Preserve source pages/spans and versions; add OCR only when required. Start with SQLite full-text search and Arabic normalization; add embeddings/reranking only against a measured benchmark.",
+      "acceptance": [
+        "An Arabic menu or brief returns attributable excerpts from the right client; unsupported pages remain marked unextracted.",
+        "Hostile document instructions do not override permissions, cause shell execution or become approved memory."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "An Arabic menu or brief returns attributable excerpts from the right client; unsupported pages remain marked unextracted.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Hostile document instructions do not override permissions, cause shell execution or become approved memory.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX17",
+      "priority": "P1",
+      "area": "Agency",
+      "depends_on": [
+        "AX15",
+        "AX16"
+      ],
+      "title": "Ship the agency brief workflow",
+      "implementation": "Collect objective, audience, dates, budget, approved menu and brand voice; show missing inputs instead of inventing them. Generate coordinated copywriter/designer/videographer briefs with reference IDs and a review step. Export an agreed native RTL DOCX template.",
+      "acceptance": [
+        "A sanitized SmashBurger-style sample yields role-specific briefs with consistent dates and no invented menu facts.",
+        "Export opens in Word with correct Arabic direction and tables; reviewer edits and source links remain traceable."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "A sanitized SmashBurger-style sample yields role-specific briefs with consistent dates and no invented menu facts.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Export opens in Word with correct Arabic direction and tables; reviewer edits and source links remain traceable.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX18",
+      "priority": "P1",
+      "area": "Tasks",
+      "depends_on": [
+        "AX10",
+        "AX15"
+      ],
+      "title": "Add useful task and calendar integrations",
+      "implementation": "Begin with one selected integration: draft meeting follow-ups or prepare a task list; enable calendar/email writes only after scoped OAuth and exact-action confirmation. Show task status, evidence and links; no promise of unattended scheduling without verified delivery.",
+      "acceptance": [
+        "Revoked credentials produce actionable reconnect behavior; retries reconcile existing writes rather than creating duplicates.",
+        "A disposable task is created only after approval and read back; denial leaves the external target unchanged."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Revoked credentials produce actionable reconnect behavior; retries reconcile existing writes rather than creating duplicates.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "A disposable task is created only after approval and read back; denial leaves the external target unchanged.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX19",
+      "priority": "P1",
+      "area": "Reliability",
+      "depends_on": [
+        "AX05",
+        "AX13"
+      ],
+      "title": "Handle power loss, offline use and provider failure",
+      "implementation": "Persist draft input and recover incomplete runs. Permit local history and knowledge browsing offline; do not imply cloud inference works offline. Use bounded timeouts, visible retries and circuit breakers. Switch providers only with consent and explicit egress awareness.",
+      "acceptance": [
+        "Killing a test-owned process mid-write does not corrupt the retained conversation store.",
+        "Dropped streams, 429, invalid credentials, empty replies and reasoning-only replies produce truthful terminal status and no duplicate writes."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Killing a test-owned process mid-write does not corrupt the retained conversation store.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Dropped streams, 429, invalid credentials, empty replies and reasoning-only replies produce truthful terminal status and no duplicate writes.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX20",
+      "priority": "P1",
+      "area": "Backup",
+      "depends_on": [
+        "AX04",
+        "AX07",
+        "AX19"
+      ],
+      "title": "Certify backup, restore and safe updates",
+      "implementation": "Preserve existing backup work; establish consistent versioned snapshots, integrity checks, encryption policy, account scoping and restore preview. Test schema migrations and rollback without undoing deletion tombstones. Keep cloud backup distinct from live sync.",
+      "acceptance": [
+        "Restore to a clean isolated account reproduces approved synthetic records, conversations and persona sources.",
+        "Corrupt, foreign-owner, path-traversal and obsolete-schema archives fail safely; a failed upgrade retains a recoverable old version."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Restore to a clean isolated account reproduces approved synthetic records, conversations and persona sources.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Corrupt, foreign-owner, path-traversal and obsolete-schema archives fail safely; a failed upgrade retains a recoverable old version.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX21",
+      "priority": "P1",
+      "area": "Observability",
+      "depends_on": [
+        "AX05",
+        "AX14"
+      ],
+      "title": "Provide private diagnostics and performance budgets",
+      "implementation": "Record run timing, tool outcomes, retrieval IDs and usage without raw private content or credentials by default. Show an export preview with redaction. Define measured service budgets and track regression distributions, not only averages.",
+      "acceptance": [
+        "A diagnostic bundle passes seeded-secret redaction checks and identifies a failed run without copying its private prompt.",
+        "The measured baseline and post-change timings include environment, sample size, model and first-visible-response/stop latency definitions."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "A diagnostic bundle passes seeded-secret redaction checks and identifies a failed run without copying its private prompt.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "The measured baseline and post-change timings include environment, sample size, model and first-visible-response/stop latency definitions.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX22",
+      "priority": "P1",
+      "area": "Consultants",
+      "depends_on": [
+        "AX09",
+        "AX16"
+      ],
+      "title": "Improve persona fidelity and review lifecycle",
+      "implementation": "Use a versioned held-out evaluation set with expected frameworks, counterexamples and citation accuracy. Let the user compare outputs without confusing agreement with truth. Review source freshness, licensing, outdated opinions and unsafe advisory domains.",
+      "acceptance": [
+        "A persona update cannot pass solely by matching catchphrases; method selection and grounded attribution are reviewed.",
+        "Unsupported legal, medical or financial certainty is flagged and high-stakes decisions are escalated to qualified humans."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "A persona update cannot pass solely by matching catchphrases; method selection and grounded attribution are reviewed.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Unsupported legal, medical or financial certainty is flagged and high-stakes decisions are escalated to qualified humans.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX23",
+      "priority": "P1",
+      "area": "Cost",
+      "depends_on": [
+        "AX02",
+        "AX21"
+      ],
+      "title": "Add transparent provider and cost controls",
+      "implementation": "Offer quality/speed presets mapped to verified capabilities, budget caps, usage reporting and explicit fallback policy. Unknown pricing is labeled unknown; estimate before high-cost document or consultant runs when feasible.",
+      "acceptance": [
+        "Budget exhaustion halts further billable steps visibly without claiming an incomplete task succeeded.",
+        "The configured provider never silently changes to a different data processor; unavailable capabilities are not advertised."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Budget exhaustion halts further billable steps visibly without claiming an incomplete task succeeded.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "The configured provider never silently changes to a different data processor; unavailable capabilities are not advertised.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX24",
+      "priority": "P2",
+      "area": "Team",
+      "depends_on": [
+        "AX04",
+        "AX07",
+        "AX10",
+        "AX20"
+      ],
+      "title": "Add employee access with real workspace authorization",
+      "implementation": "Only after the private pilot, implement owner/admin/member/client roles and document/client grants. Enforce authorization for queries, vector indexes, artifacts, cloud rows and exports; audit account switching and revocation.",
+      "acceptance": [
+        "Real independent test accounts cannot cross-read or write each other records, including direct Supabase requests.",
+        "Grant revocation invalidates cached context and pending actions before their next execution boundary."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Real independent test accounts cannot cross-read or write each other records, including direct Supabase requests.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Grant revocation invalidates cached context and pending actions before their next execution boundary.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX25",
+      "priority": "P2",
+      "area": "Access",
+      "depends_on": [
+        "AX13",
+        "AX19",
+        "AX24"
+      ],
+      "title": "Offer verified private phone access",
+      "implementation": "Choose hosted runtime or laptop runtime based on availability and privacy. Prefer supported authenticated transport; no public unauthenticated gateway. Design responsive UI or an authorized messaging channel and clearly explain separate sessions.",
+      "acceptance": [
+        "An authorized phone completes an authenticated conversation and receives the actual result; an unauthorized device is rejected.",
+        "A sleeping host is shown unavailable rather than represented as an always-on agent."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "An authorized phone completes an authenticated conversation and receives the actual result; an unauthorized device is rejected.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "A sleeping host is shown unavailable rather than represented as an always-on agent.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX26",
+      "priority": "P2",
+      "area": "Consultants",
+      "depends_on": [
+        "AX09",
+        "AX22",
+        "AX23"
+      ],
+      "title": "Add an optional consultant comparison panel",
+      "implementation": "Allow two selected consultants to review the same permission-filtered case, then show agreements, disagreements and one practical recommendation. Keep advice as proposals, enforce a run/cost cap and avoid an autonomous debate loop.",
+      "acceptance": [
+        "Every participant receives the same approved case snapshot without extra private facts.",
+        "The panel labels disagreement and uncertainty and cannot turn a suggestion into a memory fact or execute an action."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Every participant receives the same approved case snapshot without extra private facts.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "The panel labels disagreement and uncertainty and cannot turn a suggestion into a memory fact or execute an action.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX27",
+      "priority": "P2",
+      "area": "Experience",
+      "depends_on": [
+        "AX11",
+        "AX19",
+        "AX23"
+      ],
+      "title": "Add voice and richer accessibility when requested",
+      "implementation": "Provide optional Arabic voice input with transcript review and clearly disclosed transcription provider; explicit opt-in for recording retention and spoken output. Do not enable voice cloning by default.",
+      "acceptance": [
+        "The user reviews/corrects a transcript before a consequential action; denial stops the action.",
+        "Keyboard-only and screen-reader flows remain functional without microphone permissions or audio playback."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "The user reviews/corrects a transcript before a consequential action; denial stops the action.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Keyboard-only and screen-reader flows remain functional without microphone permissions or audio playback.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX28",
+      "priority": "P1",
+      "area": "Security",
+      "depends_on": [
+        "AX04",
+        "AX10",
+        "AX13"
+      ],
+      "title": "Complete threat review and distributable hardening",
+      "implementation": "Audit Tauri IPC scope, CSP, source import, redirects/SSRF, filesystem traversal/reparse handling, secret storage and logs. Require protected credential storage and authenticated network boundaries. Review dependency licenses and installer signing; no account-cookie sharing as a deployment shortcut.",
+      "acceptance": [
+        "A malicious source document/URL and forged IPC requests cannot read another workspace or invoke unrestricted commands.",
+        "Installer contents and public artifacts contain no customer records, access tokens or machine-specific credentials; signing result is recorded rather than assumed."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "PARTIAL",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "A malicious source document/URL and forged IPC requests cannot read another workspace or invoke unrestricted commands.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Installer contents and public artifacts contain no customer records, access tokens or machine-specific credentials; signing result is recorded rather than assumed.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX29",
+      "priority": "P1",
+      "area": "Quality",
+      "depends_on": [
+        "AX15",
+        "AX17",
+        "AX19",
+        "AX20",
+        "AX21",
+        "AX28"
+      ],
+      "title": "Decide production readiness from evidence",
+      "implementation": "Maintain separate development, pilot and release decisions with named blockers. Require independent review, packaged end-to-end tests, restore rehearsal, target-device acceptance and user sign-off before distribution.",
+      "acceptance": [
+        "Every required release acceptance row links to fresh reproducible evidence or an explicit blocker.",
+        "Earlier unit-test counts cannot substitute for current integration, privacy, manual usability or hardware/environment checks."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "Every required release acceptance row links to fresh reproducible evidence or an explicit blocker.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "Earlier unit-test counts cannot substitute for current integration, privacy, manual usability or hardware/environment checks.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    },
+    {
+      "id": "AX30",
+      "priority": "P1",
+      "area": "Support",
+      "depends_on": [
+        "AX15",
+        "AX21"
+      ],
+      "title": "Create an understandable operator and handover pack",
+      "implementation": "Deliver Arabic quick start, privacy/hosting explanation, recovery steps, supported limitations, ownership of accounts, update policy and a bounded support agreement. Give the cousin control of her data and access revocation.",
+      "acceptance": [
+        "A pilot user can find help, export her data and identify what leaves the device without developer assistance.",
+        "The support checklist distinguishes provider outage, runtime outage, failed task and local UI failure without asking for passwords in chat."
+      ],
+      "owner": "Unassigned; project owner assigns before implementation",
+      "status": "Proposed; not implemented by this roadmap",
+      "state": "NOT_IMPLEMENTED",
+      "evidence": [],
+      "acceptance_dispositions": [
+        {
+          "criterion": "A pilot user can find help, export her data and identify what leaves the device without developer assistance.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        },
+        {
+          "criterion": "The support checklist distinguishes provider outage, runtime outage, failed task and local UI failure without asking for passwords in chat.",
+          "state": "UNVERIFIED",
+          "reason": "Not implemented or verified in this tranche."
+        }
+      ]
+    }
+  ],
+  "complete": false
+}

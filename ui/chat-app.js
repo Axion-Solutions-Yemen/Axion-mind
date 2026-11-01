@@ -729,7 +729,7 @@
             if (origin.mode === 'session') await invoke('stream_hermes_chat', {sessionId:origin.id,message:text,onEvent:channel,requestId:request.id});
             else {
               const persona = personas.find(p=>p.id===origin.id || origin.id.startsWith(p.id + '_'));
-              await invoke('stream_persona_chat', {personaId:origin.id,message:text,systemPrompt:persona?.system_prompt || '',model:origin.model || persona?.model || null,onEvent:channel,requestId:request.id});
+              await invoke('stream_persona_chat', {personaId:persona?.id || origin.id,sessionId:origin.id,message:text,systemPrompt:persona?.system_prompt || '',model:origin.model || persona?.model || null,onEvent:channel,requestId:request.id});
             }
           } else {
             const endpoint = origin.mode === 'persona' ? `/api/personas/${origin.id}/chat` : `/api/sessions/${origin.id}/chat`;
